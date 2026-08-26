@@ -14,6 +14,7 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 ### Geändert
 
 - zukünftige Produktvision und priorisierte Roadmap dokumentiert
+- Produktbacklog in 21 klar abgegrenzte Arbeitspakete strukturiert
 - Repository unter `GPL-3.0-or-later` lizenziert
 
 ## [0.1.0] – 2026-08-26

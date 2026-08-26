@@ -227,7 +227,8 @@ flowchart TD
 | V05-17 | Grafik-, Animation- und Audio-Produktionspass | v0.5 | P1 |
 | V05-18 | Save-Migration und Inhaltskompatibilität | v0.5 | P0 |
 | V05-19 | Performance-, Barrierefreiheits- und Plattform-QA | v0.5 | P0 |
-| V05-20 | Externer Playtest, Balancing und Demo-Release | v0.5 | P0 |
+| V05-20 | Externer Playtest und Balancing | v0.5 | P0 |
+| V05-21 | Release-Automation und Veröffentlichung | v0.5 | P0 |
 
 Diese IDs bleiben als stabile Planungsreferenz in Issue-Titeln und Dokumentation erhalten. GitHub-Issue-Nummern werden zusätzlich vergeben.
 
