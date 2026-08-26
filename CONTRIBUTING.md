@@ -23,6 +23,7 @@ Danke für dein Interesse an Radar Operator. Kleine, klar abgegrenzte Änderunge
 - Keine generierten Ordner wie `.godot/` oder `builds/` committen.
 - `.gd.uid`-Dateien gehören zum Godot-Projekt und werden mitgeführt.
 - Neue Assets müssen selbst erstellt, passend lizenziert und in der Änderung dokumentiert sein.
+- Mit einem Beitrag bestätigst du, dass du ihn unter `GPL-3.0-or-later` veröffentlichen darfst.
 
 ## Stil
 
@@ -43,3 +44,7 @@ Danke für dein Interesse an Radar Operator. Kleine, klar abgegrenzte Änderunge
 ## Fehler melden
 
 Bitte Godot-Version, Betriebssystem, reproduzierbare Schritte, erwartetes Verhalten und relevante Logauszüge angeben. Savegames oder Logs vor dem Hochladen auf persönliche Daten prüfen.
+
+## Lizenz
+
+Beiträge werden unter der [GNU General Public License v3.0 or later](LICENSE) veröffentlicht. Fremdcode und Assets müssen GPL-kompatibel sein und ihre Herkunft sowie Lizenz nachvollziehbar dokumentieren.

@@ -11,6 +11,7 @@
 ![GDScript](https://img.shields.io/badge/GDScript-statisch_typisiert-355570)
 ![Tests](https://img.shields.io/badge/Tests-59_erfolgreich-2ea44f)
 ![Status](https://img.shields.io/badge/Status-spielbarer_Prototyp-f0a202)
+[![License: GPL v3+](https://img.shields.io/badge/License-GPL_v3%2B-blue.svg)](LICENSE)
 
 *Sensoren aufstellen. Unsichere Tracks bewerten. Kritische Infrastruktur schützen.*
 
@@ -149,18 +150,19 @@ scripts/tests/       Headless Unit-, Integrations- und End-to-End-Tests
 
 - [Spiel- und Technikkonzept](docs/radar-operator-konzept.md)
 - [QA, Plattformstatus und bekannte Einschränkungen](docs/qa-und-bekannte-einschraenkungen.md)
+- [Produktvision v0.5 Public Demo](docs/produktvision-v0.5.md)
 - [Änderungsverlauf](CHANGELOG.md)
 - [Hinweise für Beiträge](CONTRIBUTING.md)
 
-## Roadmap
+## Roadmap zur v0.5 Public Demo
 
-- Missionsauswahl und Tutorial Mission 2
-- Geländehöhen und vorberechnete Sichtbarkeitsmasken
-- mobile Systeme, Energiegraph und Störmechaniken
-- animierte Replay-Zeitleiste
-- externe Spieltests und finales Audio-/Grafikdesign
-- signierte und nativ getestete Plattform-Builds
+- **v0.2 Produktgrundlage:** Missionsauswahl, Fortschritt, Einstellungen und Designsystem
+- **v0.3 Entscheidungstiefe:** manuelle Freigabe, Einsatzregeln, Netze, Gelände und Störung
+- **v0.4 Mini-Kampagne:** vier Missionen sowie animierte Auswertung
+- **v0.5 Public Demo:** Produktionspass, Playtests, Plattform-QA und Veröffentlichung
+
+Die vollständige Zieldefinition und der priorisierte Backlog stehen in der [Produktvision v0.5](docs/produktvision-v0.5.md).
 
 ## Beiträge und Lizenz
 
-Fehlerberichte und Pull Requests sind willkommen; Details stehen in [CONTRIBUTING.md](CONTRIBUTING.md). Aktuell wurde keine Open-Source-Lizenz vergeben. Ohne ausdrückliche Lizenz gelten die gesetzlichen Urheberrechtsbestimmungen; der Code darf nicht automatisch weiterverwendet oder verteilt werden.
+Fehlerberichte und Pull Requests sind willkommen; Details stehen in [CONTRIBUTING.md](CONTRIBUTING.md). Radar Operator wird unter der [GNU General Public License v3.0 or later](LICENSE) veröffentlicht.

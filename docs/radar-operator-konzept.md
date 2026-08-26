@@ -419,12 +419,13 @@ Der Prototyp gilt als erfolgreich, wenn ein neuer Spieler ohne externe Erklärun
 5. in der Auswertung nachvollziehen kann, warum Infrastruktur geschützt oder getroffen wurde,
 6. die Mission anschließend mit einer erkennbar verbesserten Aufstellung erneut spielen kann.
 
-## 16. Offene Produktentscheidungen
+## 16. Produktentscheidungen für v0.5
 
-- Soll die spätere Kampagne eine feste Geschichte oder eine systemische nationale Lage verwenden?
-- Wie stark soll manuelle Feuerfreigabe gegenüber Regeln gewichtet werden?
-- Soll der Kontrollraum langfristig nur UI-Rahmen bleiben oder als 3D-Raum ausgebaut werden?
-- Welche Tonalität soll das fiktive Setting besitzen: nüchtern-realistisch, retrofuturistisch oder leicht stilisiert?
-- Wird der Szenario-Editor Teil der ersten Veröffentlichung oder ein späteres Update?
+- Die öffentliche Demo verwendet eine handgefertigte Mini-Kampagne statt einer prozeduralen nationalen Lage.
+- Konfigurierbare Regeln bleiben der Kern; manuelle Trackpriorität und Einsatzfreigabe ergänzen sie für kritische Entscheidungen.
+- Der Kontrollraum bleibt eine hochwertige stilisierte 2D-Oberfläche und wird nicht als begehbarer 3D-Raum umgesetzt.
+- Die visuelle Tonalität ist nüchtern und retro-technisch, ohne reale Staaten oder Systeme abzubilden.
+- Ein vollständiger Szenario-Editor ist nicht Teil der v0.5 Public Demo.
+- Der Quellcode wird unter `GPL-3.0-or-later` veröffentlicht.
 
-Diese Fragen blockieren den MVP-Prototypen nicht.
+Die verbindliche Zukunftsvision, Qualitätsziele und Roadmap stehen in [Produktvision v0.5 Public Demo](produktvision-v0.5.md).

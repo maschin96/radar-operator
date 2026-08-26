@@ -6,9 +6,15 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ### Geplant
 
-- Missionsauswahl und weitere Tutorial-Mission
-- plattformspezifische Laufzeit- und Eingabetests
-- finale Audio- und Grafikproduktion
+- v0.5 Public Demo mit handgefertigter Mini-Kampagne
+- regelbasierte Steuerung mit manueller Trackpriorität und Einsatzfreigabe
+- hochwertige stilisierte 2D-Leitstandpräsentation
+- plattformspezifische Laufzeit-, Eingabe- und Barrierefreiheitstests
+
+### Geändert
+
+- zukünftige Produktvision und priorisierte Roadmap dokumentiert
+- Repository unter `GPL-3.0-or-later` lizenziert
 
 ## [0.1.0] – 2026-08-26
 
