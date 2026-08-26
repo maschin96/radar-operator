@@ -1,0 +1,28 @@
+name: Funktionsvorschlag
+description: Neue Spielmechanik oder Verbesserung vorschlagen
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem wird gelöst?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Vorgeschlagene Lösung
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativen und Auswirkungen
+  - type: checkboxes
+    id: fictional
+    attributes:
+      label: Projektgrenzen
+      options:
+        - label: Der Vorschlag bleibt bei fiktiven, abstrahierten Systemen.
+          required: true

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SensorDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/sensor_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"sensor_early_warning"
+display_name = "Frühwarnsensor"
+description = "Weiträumige Erfassung mit langsamerer Aktualisierung."
+purchase_cost = 720
+detection_range = 720.0
+update_interval = 1.5
+classification_strength = 0.46
+position_error = 42.0
+resistance = 0.7
+power_demand = 22.0

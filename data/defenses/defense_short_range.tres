@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DefenseDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defense_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"defense_short_range"
+display_name = "Kurzstreckensystem"
+description = "Objektschutz mit begrenzter Munition."
+purchase_cost = 480
+engagement_range = 280.0
+minimum_range = 20.0
+tracking_time = 0.9
+reload_time = 3.0
+ammunition = 8
+base_success_chance = 0.68
+power_demand = 9.0

@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="ScenarioDefinition" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/scenario_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/sensors/sensor_short_range.tres" id="2"]
+[ext_resource type="Resource" path="res://data/sensors/sensor_early_warning.tres" id="3"]
+[ext_resource type="Resource" path="res://data/defenses/defense_gun.tres" id="4"]
+[ext_resource type="Resource" path="res://data/defenses/defense_short_range.tres" id="5"]
+[ext_resource type="Resource" path="res://data/defenses/defense_medium_range.tres" id="6"]
+[ext_resource type="Resource" path="res://data/threats/threat_swift.tres" id="7"]
+[ext_resource type="Resource" path="res://data/threats/threat_low_signature.tres" id="8"]
+[ext_resource type="Resource" path="res://data/threats/threat_heavy.tres" id="9"]
+[ext_resource type="Resource" path="res://data/infrastructure/infrastructure_command.tres" id="10"]
+[ext_resource type="Resource" path="res://data/infrastructure/infrastructure_power.tres" id="11"]
+[ext_resource type="Resource" path="res://data/infrastructure/infrastructure_factory.tres" id="12"]
+[ext_resource type="Resource" path="res://data/scenarios/mvp_wave_01.tres" id="13"]
+
+[resource]
+script = ExtResource("1")
+scenario_id = &"mvp_test_scenario"
+display_name = "Operation Morgenwache"
+briefing = "Schützen Sie das Kommandozentrum, das Kraftwerk und die Fabrik vor der ersten Angriffswelle."
+world_size = Vector2(2000, 1200)
+starting_budget = 2500
+seed = 20260826
+mission_duration = 180.0
+definitions = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12")])
+starting_entities = Array[Dictionary]([{
+"definition_id": &"infrastructure_command",
+"faction": &"player",
+"id": &"capital_command",
+"position": Vector2(1000, 610)
+}, {
+"definition_id": &"infrastructure_power",
+"faction": &"player",
+"id": &"north_power",
+"position": Vector2(520, 390)
+}, {
+"definition_id": &"infrastructure_factory",
+"faction": &"player",
+"id": &"east_factory",
+"position": Vector2(1510, 790)
+}])
+attack_waves = Array[Resource]([ExtResource("13")])
+placement_zones = Array[Rect2]([Rect2(80, 80, 1840, 1040)])
+blocked_zones = Array[Rect2]([Rect2(940, 550, 120, 120), Rect2(470, 340, 100, 100), Rect2(1460, 740, 100, 100)])
+energy_connections = Array[Dictionary]([{
+"consumer_id": &"capital_command",
+"reserve_duration": 10.0,
+"source_id": &"north_power"
+}, {
+"consumer_id": &"east_factory",
+"reserve_duration": 5.0,
+"source_id": &"north_power"
+}])
+mission_goals = {
+"minimum_survivors": 2,
+"required_survivors": PackedStringArray("capital_command")
+}

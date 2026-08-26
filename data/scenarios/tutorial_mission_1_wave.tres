@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AttackWaveDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/attack_wave_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"tutorial_wave_01"
+start_time = 8.0
+spawns = Array[Dictionary]([{
+"completion": &"target",
+"definition_id": &"threat_swift",
+"delay": 0.0,
+"id": &"tutorial_contact_01",
+"route": PackedVector2Array(2000, 260, 1650, 360, 1300, 490, 1000, 600),
+"target_id": &"tutorial_power"
+}])

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ThreatDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/threat_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"threat_swift"
+display_name = "Schneller Kontakt"
+description = "Schnell, aber deutlich erfassbar."
+movement_speed = 155.0
+signature_strength = 0.82
+durability = 0.8
+impact_damage = 34.0
+target_preference = &"power"

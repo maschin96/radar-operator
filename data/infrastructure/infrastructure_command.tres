@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="InfrastructureDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/infrastructure_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"infrastructure_command"
+display_name = "Kommandozentrum"
+description = "Zentrales Führungsobjekt der Mission."
+infrastructure_type = &"command"
+maximum_integrity = 140.0
+protection_value = 3.0
+is_critical = true

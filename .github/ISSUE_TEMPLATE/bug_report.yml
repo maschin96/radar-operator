@@ -1,0 +1,50 @@
+name: Fehlerbericht
+description: Reproduzierbaren Fehler in Radar Operator melden
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Danke für den Bericht. Bitte keine persönlichen Daten oder vertraulichen Savegames hochladen.
+  - type: input
+    id: version
+    attributes:
+      label: Godot- und Projektversion
+      placeholder: Godot 4.7.2, Radar Operator 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Betriebssystem
+      placeholder: macOS 15, Windows 11 oder Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zum Reproduzieren
+      description: Möglichst kurze, nummerierte Schrittfolge
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Tatsächliches Verhalten und Logs
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Vorprüfung
+      options:
+        - label: Ich habe vorhandene Issues auf Duplikate geprüft.
+          required: true
+        - label: Die angehängten Daten enthalten keine Zugangsdaten oder persönlichen Informationen.
+          required: true

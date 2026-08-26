@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Radar Operator</title>
+  <desc id="description">Stilisierter grüner Radarschirm mit drei Kontakten</desc>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#123c2d"/>
+      <stop offset="1" stop-color="#06130f"/>
+    </radialGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#66f2a8" stop-opacity=".58"/>
+      <stop offset="1" stop-color="#66f2a8" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="92" fill="url(#background)"/>
+  <circle cx="256" cy="256" r="178" fill="none" stroke="#4fbe83" stroke-width="8"/>
+  <circle cx="256" cy="256" r="119" fill="none" stroke="#2e8059" stroke-width="4"/>
+  <circle cx="256" cy="256" r="60" fill="none" stroke="#2e8059" stroke-width="4"/>
+  <path d="M78 256h356M256 78v356" fill="none" stroke="#2e8059" stroke-width="4"/>
+  <path d="M256 256 116 146A178 178 0 0 1 368 118Z" fill="url(#sweep)"/>
+  <path d="M256 256 364 115" fill="none" stroke="#83ffc0" stroke-linecap="round" stroke-width="9"/>
+  <circle cx="346" cy="179" r="12" fill="#ff705e" stroke="#ffd5ce" stroke-width="4"/>
+  <circle cx="172" cy="220" r="10" fill="#ffcc66" stroke="#fff0c2" stroke-width="4"/>
+  <circle cx="309" cy="342" r="9" fill="#83ffc0" stroke="#dcffec" stroke-width="4"/>
+  <circle cx="256" cy="256" r="13" fill="#dfffea"/>
+  <path d="M256 470c-84-30-130-79-130-147v-17l130-45 130 45v17c0 68-46 117-130 147Z" fill="#071a13" fill-opacity=".88" stroke="#67dfa0" stroke-width="7"/>
+  <path d="m205 360 34 34 72-80" fill="none" stroke="#8dffc5" stroke-linecap="round" stroke-linejoin="round" stroke-width="18"/>
+</svg>

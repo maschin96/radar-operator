@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SensorDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/sensor_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"sensor_short_range"
+display_name = "Kurzstreckensensor"
+description = "Günstiger Sensor mit schneller Aktualisierung."
+purchase_cost = 280
+detection_range = 360.0
+update_interval = 0.5
+classification_strength = 0.32
+position_error = 24.0
+resistance = 0.42
+power_demand = 8.0

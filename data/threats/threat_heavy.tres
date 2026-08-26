@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ThreatDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/threat_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"threat_heavy"
+display_name = "Schwerer Kontakt"
+description = "Langsamer Kontakt mit hoher Widerstandsfähigkeit."
+movement_speed = 78.0
+signature_strength = 0.92
+durability = 1.8
+impact_damage = 65.0
+target_preference = &"factory"

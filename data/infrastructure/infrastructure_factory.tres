@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="InfrastructureDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/infrastructure_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"infrastructure_factory"
+display_name = "Fabrik"
+description = "Wichtiger Produktionsstandort."
+infrastructure_type = &"factory"
+maximum_integrity = 100.0
+protection_value = 1.8

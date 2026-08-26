@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackWaveDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/attack_wave_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"wave_01"
+start_time = 5.0
+spawns = Array[Dictionary]([{
+"completion": &"target",
+"definition_id": &"threat_swift",
+"delay": 0.0,
+"id": &"swift_01",
+"route": PackedVector2Array(2000, 180, 1680, 280, 1280, 420, 1000, 610),
+"target_id": &"capital_command"
+}, {
+"completion": &"target",
+"definition_id": &"threat_low_signature",
+"delay": 7.0,
+"id": &"low_signature_01",
+"route": PackedVector2Array(0, 260, 280, 330, 520, 390),
+"target_id": &"north_power"
+}, {
+"completion": &"target",
+"definition_id": &"threat_heavy",
+"delay": 17.0,
+"id": &"heavy_01",
+"route": PackedVector2Array(2000, 1040, 1800, 930, 1510, 790),
+"target_id": &"east_factory"
+}])

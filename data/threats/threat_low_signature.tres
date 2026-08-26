@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ThreatDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/threat_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"threat_low_signature"
+display_name = "Schwacher Kontakt"
+description = "Schwerer zu erfassen und zu klassifizieren."
+movement_speed = 105.0
+signature_strength = 0.36
+durability = 1.0
+impact_damage = 42.0
+target_preference = &"command"

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DefenseDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defense_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"defense_gun"
+display_name = "Nahbereichsgeschütz"
+description = "Günstige letzte Verteidigungslinie."
+purchase_cost = 220
+engagement_range = 130.0
+tracking_time = 0.5
+reload_time = 1.2
+ammunition = 18
+base_success_chance = 0.48
+power_demand = 5.0
