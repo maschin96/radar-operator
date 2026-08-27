@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ThreatDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/threat_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"threat_swift"
+display_name = "Deutlicher Übungskontakt"
+description = "Langsam genug für den geführten Ablauf und mit eindeutiger Signatur."
+movement_speed = 105.0
+signature_strength = 0.95
+durability = 0.5
+impact_damage = 34.0
+target_preference = &"power"

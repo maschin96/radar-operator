@@ -1,7 +1,7 @@
 extends SceneTree
 
-const MAIN_SCENE_PATH := "res://scenes/app/main.tscn"
-const MAIN_SCRIPT_PATH := "res://scripts/app/main.gd"
+const MAIN_SCENE_PATH := "res://scenes/app/app_shell.tscn"
+const MAIN_SCRIPT_PATH := "res://scripts/app/app_shell.gd"
 
 
 func _initialize() -> void:
@@ -26,20 +26,11 @@ func _run() -> void:
 	root.add_child(main_screen)
 	await process_frame
 
-	if main_screen.name != "Main":
+	if main_screen.name != "AppShell":
 		_fail("Unexpected root node: %s" % main_screen.name)
 		return
-
-	var title := main_screen.get_node_or_null("Margin/Layout/Header/Title") as Label
-	if title == null:
-		_fail("Main scene title is missing")
-		return
-	if title.text != "RADAR OPERATOR":
-		_fail("Main scene title text is unexpected")
-		return
-	var tactical_map := main_screen.get_node_or_null("Margin/Layout/Body/TacticalMap")
-	if tactical_map == null:
-		_fail("Main scene tactical map is missing")
+	if main_screen.get_current_view() != &"main_menu":
+		_fail("Application did not initialize its main menu")
 		return
 
 	print("SMOKE TEST PASSED: project and main scene initialized")

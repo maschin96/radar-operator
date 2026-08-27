@@ -429,3 +429,15 @@ Der Prototyp gilt als erfolgreich, wenn ein neuer Spieler ohne externe Erklärun
 - Der Quellcode wird unter `GPL-3.0-or-later` veröffentlicht.
 
 Die verbindliche Zukunftsvision, Qualitätsziele und Roadmap stehen in [Produktvision v0.5 Public Demo](produktvision-v0.5.md).
+
+## Versionierter Szenariokatalog
+
+Szenarien werden als `ScenarioDefinition`-Ressourcen unter `data/scenarios/` automatisch gefunden. Der Katalog lädt ausschließlich Szenarioressourcen, sortiert sie deterministisch nach `campaign_order` und validiert vor dem Start:
+
+- `content_version` gegen die aktuell unterstützte Inhaltsversion,
+- eindeutige Szenario-IDs und Kampagnenpositionen,
+- Anzeigename, Kurzbeschreibung, erwartete Dauer und Lernziele,
+- Freischaltreferenzen auf vorhandene Szenarien,
+- alle bisherigen Entitäts-, Wellen-, Karten- und Tutorialreferenzen.
+
+Eine neue Mission benötigt mindestens `scenario_id`, `display_name`, `summary`, `campaign_order`, `expected_duration_minutes` und `learning_objectives`. Abhängige Missionen nennen ihre Vorgänger in `unlock_requires`. Ungültige oder inkompatible Inhalte blockieren den Katalog mit einer konkreten Fehlermeldung, statt erst während einer Spielsitzung abzustürzen.

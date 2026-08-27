@@ -19,13 +19,16 @@ func _run() -> void:
 	_test_redundant_assignments_are_avoided()
 	_test_decision_is_explainable_and_ties_are_stable()
 	_test_manual_release_and_track_loss()
+	_test_manual_priority_changes_stable_target_order()
+	_test_manual_block_prevents_assignment()
+	_test_invalid_rule_profile_is_rejected()
 
 	if not _failures.is_empty():
 		for failure in _failures:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("DEFENSE SYSTEM TESTS PASSED: 5 test cases")
+	print("DEFENSE SYSTEM TESTS PASSED: 8 test cases")
 	quit(0)
 
 
@@ -111,6 +114,31 @@ func _test_manual_release_and_track_loss() -> void:
 	_expect(system.get_defenses()[0].assigned_track_id == track.id, "Manual authorization did not assign track")
 	system.process_tick(0.1, 0.3, [])
 	_expect(system.get_defenses()[0].assigned_track_id.is_empty(), "Lost track remained assigned")
+
+
+func _test_manual_priority_changes_stable_target_order() -> void:
+	var system: Variant = _system([{"id": &"d1", "definition_id": &"defense_medium_range", "position": Vector2(500.0, 500.0)}])
+	var first: Variant = _track(&"T0001", Vector2(700.0, 500.0))
+	var second: Variant = _track(&"T0002", Vector2(700.0, 500.0))
+	second.priority = TrackState.Priority.CRITICAL
+	system.process_tick(0.1, 0.1, [first, second])
+	_expect(system.get_defenses()[0].assigned_track_id == &"T0002", "Manual critical priority did not change deterministic assignment")
+
+
+func _test_manual_block_prevents_assignment() -> void:
+	var system: Variant = _system([{"id": &"d1", "definition_id": &"defense_short_range", "position": Vector2(500.0, 500.0)}])
+	var track: Variant = _track(&"T0001", Vector2(600.0, 500.0))
+	track.release_status = TrackState.ReleaseStatus.BLOCKED
+	system.process_tick(0.1, 0.1, [track])
+	_expect(system.get_defenses()[0].assigned_track_id.is_empty(), "Blocked track was assigned")
+
+
+func _test_invalid_rule_profile_is_rejected() -> void:
+	var system: Variant = _system([])
+	var before: Dictionary = system.get_rules()
+	var result: Dictionary = system.set_rules({"minimum_classification": &"imaginary"})
+	_expect(not result.success, "Invalid minimum classification was accepted")
+	_expect(system.get_rules() == before, "Rejected rule profile partially changed active rules")
 
 
 func _expect(condition: bool, message: String) -> void:

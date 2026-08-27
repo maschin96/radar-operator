@@ -1,13 +1,16 @@
 class_name MainScreen
 extends Control
 
+signal request_main_menu
+
 const Log := preload("res://scripts/core/app_log.gd")
 const Loader := preload("res://scripts/core/scenario_loader.gd")
+const CatalogLoader := preload("res://scripts/core/scenario_catalog.gd")
 const Session := preload("res://scripts/app/game_session.gd")
 const Report := preload("res://scripts/systems/mission_report.gd")
 const Saves := preload("res://scripts/systems/save_manager.gd")
 const Tutorial := preload("res://scripts/ui/tutorial_controller.gd")
-const SCENARIO_PATH := "res://data/scenarios/tutorial_mission_1.tres"
+const DEFAULT_SCENARIO_ID := &"tutorial_mission_1"
 const SAVE_PATH := "user://radar_operator_save.json"
 
 @onready var _map: TacticalMap = %TacticalMap
@@ -36,6 +39,7 @@ const SAVE_PATH := "user://radar_operator_save.json"
 @onready var _tutorial_instruction: Label = %TutorialInstruction
 
 var session: GameSession
+var initial_scenario: ScenarioDefinition
 var mission_report: MissionReport
 var tutorial: TutorialController
 var _selected_definition_id: StringName
@@ -45,14 +49,24 @@ var _catalog_buttons: Dictionary = {}
 
 
 func _ready() -> void:
-	var result: Dictionary = Loader.new().load_scenario(SCENARIO_PATH)
-	if not result.success:
-		_status_label.text = "Szenariofehler: " + str(result.errors)
+	var scenario := initial_scenario
+	if scenario == null:
+		var catalog_result: Dictionary = CatalogLoader.new().discover()
+		if not catalog_result.success:
+			_status_label.text = "Inhaltskatalogfehler: " + str(catalog_result.errors)
+			push_error(_status_label.text)
+			return
+		for candidate in catalog_result.scenarios:
+			if candidate.scenario_id == DEFAULT_SCENARIO_ID:
+				scenario = candidate
+				break
+	if scenario == null:
+		_status_label.text = "Inhaltskatalogfehler: Startszenario '%s' fehlt." % DEFAULT_SCENARIO_ID
 		push_error(_status_label.text)
 		return
-	_create_session(result.scenario)
-	_configure_briefing(result.scenario)
-	_setup_tutorial(result.scenario)
+	_create_session(scenario)
+	_configure_briefing(scenario)
+	_setup_tutorial(scenario)
 	_map.map_clicked.connect(_on_map_clicked)
 	_map.map_hovered.connect(_on_map_hovered)
 	_map.object_selected.connect(_on_object_selected)
@@ -63,6 +77,8 @@ func _ready() -> void:
 	%Speed4.pressed.connect(_set_time_scale.bind(4.0))
 	_remove_button.pressed.connect(_remove_selected)
 	_auto_release.toggled.connect(_on_auto_release_toggled)
+	%MinimumClassification.item_selected.connect(_on_minimum_classification_selected)
+	%AllowRedundant.toggled.connect(_on_allow_redundant_toggled)
 	_restart_same.pressed.connect(restart_mission.bind(true))
 	_restart_new.pressed.connect(restart_mission.bind(false))
 	_save_button.pressed.connect(save_game)
@@ -72,7 +88,14 @@ func _ready() -> void:
 	%HighContrast.toggled.connect(_on_accessibility_changed)
 	%ReducedEffects.toggled.connect(_on_accessibility_changed)
 	%AlertsEnabled.toggled.connect(func(enabled: bool) -> void: _audio.alerts_enabled = enabled)
+	%MainMenu.pressed.connect(func() -> void: request_main_menu.emit())
+	%TrackPriority.pressed.connect(_cycle_track_priority)
+	%AuthorizeTrack.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.AUTHORIZED))
+	%BlockTrack.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.BLOCKED))
+	%ResetTrackRelease.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.DEFAULT))
+	%ProtectionPriority.pressed.connect(_cycle_protection_priority)
 	_build_catalog()
+	_setup_rule_editor()
 	_refresh_ui()
 	Log.info("Main", "Playable control room initialized")
 
@@ -85,12 +108,25 @@ func _process(delta: float) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event.pressed or event.echo or session == null:
 		return
-	match event.keycode:
-		KEY_SPACE: _set_time_scale(0.0 if session.simulation.get_time_scale() > 0.0 else 1.0)
-		KEY_1: _set_time_scale(1.0)
-		KEY_2: _set_time_scale(2.0)
-		KEY_4: _set_time_scale(4.0)
-		KEY_B: _set_briefing_visible(not _briefing_panel.visible)
+	if event.is_action_pressed(&"simulation_pause") or event.keycode == KEY_SPACE and not InputMap.has_action(&"simulation_pause"):
+		_set_time_scale(0.0 if session.simulation.get_time_scale() > 0.0 else 1.0)
+	elif event.is_action_pressed(&"simulation_speed_1") or event.keycode == KEY_1 and not InputMap.has_action(&"simulation_speed_1"):
+		_set_time_scale(1.0)
+	elif event.is_action_pressed(&"simulation_speed_2") or event.keycode == KEY_2 and not InputMap.has_action(&"simulation_speed_2"):
+		_set_time_scale(2.0)
+	elif event.is_action_pressed(&"simulation_speed_4") or event.keycode == KEY_4 and not InputMap.has_action(&"simulation_speed_4"):
+		_set_time_scale(4.0)
+	elif event.is_action_pressed(&"toggle_briefing") or event.keycode == KEY_B and not InputMap.has_action(&"toggle_briefing"):
+		_set_briefing_visible(not _briefing_panel.visible)
+
+
+func apply_settings(settings: Dictionary) -> void:
+	%HighContrast.button_pressed = bool(settings.get("high_contrast", false))
+	%ReducedEffects.button_pressed = bool(settings.get("reduced_effects", false))
+	%AlertsEnabled.button_pressed = bool(settings.get("alerts_enabled", true))
+	_audio.alerts_enabled = %AlertsEnabled.button_pressed
+	_audio.set_alert_volume(float(settings.get("alerts_volume", 0.8)))
+	_on_accessibility_changed(true)
 
 
 func select_build_definition(definition_id: StringName) -> bool:
@@ -241,6 +277,8 @@ func _on_object_selected(kind: StringName, object_id: StringName) -> void:
 
 func _refresh_details(snapshot: Dictionary) -> void:
 	_remove_button.disabled = true
+	_set_track_controls_visible(false)
+	%ProtectionPriority.visible = false
 	if _selected_object_id.is_empty():
 		_details.text = "Kein Objekt ausgewählt.\n\nTracks zeigen geschätzte Position und Unsicherheit, nicht die wahre Zielposition."
 		return
@@ -253,13 +291,23 @@ func _refresh_details(snapshot: Dictionary) -> void:
 		if object.id != _selected_object_id:
 			continue
 		if _selected_object_kind == &"track":
-			_details.text = "[b]%s[/b]\nKlassifikation: %s\nKonfidenz: %.0f%%\nUnsicherheit: %.1f\nMessungen: %d\nSensoren: %d\n\nLetzte Fusion:\n%s" % [object.id, object.classification, object.classification_confidence * 100.0, object.uncertainty_radius, object.measurement_count, object.reporting_sensors.size(), str(object.last_update_summary)]
+			_set_track_controls_visible(true)
+			%TrackPriority.text = "PRIORITÄT: %s" % TrackState.Priority.keys()[object.priority]
+			_details.text = "[b]%s[/b]\nKlassifikation: %s\nKonfidenz: %.0f%%\nUnsicherheit: %.1f\nMessungen: %d\nSensoren: %d\nPriorität: %s\nFreigabe: %s\n\nLetzte Fusion:\n%s" % [object.id, object.classification, object.classification_confidence * 100.0, object.uncertainty_radius, object.measurement_count, object.reporting_sensors.size(), TrackState.Priority.keys()[object.priority], TrackState.ReleaseStatus.keys()[object.release_status], str(object.last_update_summary)]
 		elif _selected_object_kind == &"system":
 			var definition := _definition(object.definition_id)
-			_details.text = "[b]%s[/b]\nTyp: %s\nPosition: %.0f / %.0f\nReichweite: %.0f" % [object.id, definition.display_name, object.position.x, object.position.y, session.placement.get_definition_range(object.definition_id)]
+			var decision: Dictionary = {}
+			for defense_state in snapshot.defenses:
+				if defense_state.id == object.id:
+					decision = defense_state.last_decision
+					break
+			_details.text = "[b]%s[/b]\nTyp: %s\nPosition: %.0f / %.0f\nReichweite: %.0f\n\nLetzte Zielentscheidung:\n%s" % [object.id, definition.display_name, object.position.x, object.position.y, session.placement.get_definition_range(object.definition_id), str(decision)]
 			_remove_button.disabled = session.phase != GameSession.Phase.PREPARATION
 		else:
-			_details.text = "[b]%s[/b]\nIntegrität: %.0f / %.0f\nEnergie: %s\nStatus: %s" % [object.id, object.integrity, object.maximum_integrity, "ONLINE" if object.powered else "AUS", InfrastructureState.Status.keys()[object.status]]
+			%ProtectionPriority.visible = true
+			var priority := float((session.defenses.get_rules().infrastructure_priorities as Dictionary).get(String(object.id), 1.0))
+			%ProtectionPriority.text = "SCHUTZPRIORITÄT: %.0f" % priority
+			_details.text = "[b]%s[/b]\nIntegrität: %.0f / %.0f\nEnergie: %s\nStatus: %s\nSchutzpriorität: %.0f" % [object.id, object.integrity, object.maximum_integrity, "ONLINE" if object.powered else "AUS", InfrastructureState.Status.keys()[object.status], priority]
 		return
 	_selected_object_id = &""
 	_details.text = "Objekt nicht mehr verfügbar."
@@ -274,17 +322,98 @@ func _remove_selected() -> void:
 
 func _on_auto_release_toggled(enabled: bool) -> void:
 	if session != null:
-		session.set_defense_rules({"automatic_release": enabled})
+		var result := session.set_defense_rules({"automatic_release": enabled})
+		if not result.success:
+			_status_label.text = "Regel abgelehnt: " + "; ".join(result.errors)
+
+
+func _setup_rule_editor() -> void:
+	%MinimumClassification.clear()
+	for classification in [&"unknown", &"air_contact", &"suspicious", &"hostile"]:
+		%MinimumClassification.add_item(String(classification).capitalize())
+		%MinimumClassification.set_item_metadata(%MinimumClassification.item_count - 1, classification)
+	%MinimumClassification.select(2)
+
+
+func _on_minimum_classification_selected(index: int) -> void:
+	if session == null:
+		return
+	var classification := StringName(%MinimumClassification.get_item_metadata(index))
+	var result := session.set_defense_rules({"minimum_classification": classification})
+	_status_label.text = "Mindestklassifikation: %s" % classification if result.success else "Regel abgelehnt: " + "; ".join(result.errors)
+
+
+func _on_allow_redundant_toggled(enabled: bool) -> void:
+	if session == null:
+		return
+	var result := session.set_defense_rules({"allow_redundant_engagement": enabled})
+	_status_label.text = "Redundante Einsätze %s." % ("erlaubt" if enabled else "deaktiviert") if result.success else "Regel abgelehnt: " + "; ".join(result.errors)
+
+
+func _set_track_controls_visible(visible: bool) -> void:
+	%TrackPriority.visible = visible
+	%AuthorizeTrack.visible = visible
+	%BlockTrack.visible = visible
+	%ResetTrackRelease.visible = visible
+
+
+func _cycle_track_priority() -> void:
+	if _selected_object_kind != &"track":
+		return
+	var track := session.fusion.get_track(_selected_object_id)
+	if track == null:
+		return
+	var next_priority := (track.priority + 1) % TrackState.Priority.size()
+	var result := session.set_track_priority(track.id, next_priority, "Manuell im Trackdetail gesetzt")
+	_status_label.text = "Trackpriorität geändert." if result.success else "Priorität abgelehnt: %s" % result.reason
+
+
+func _set_selected_track_release(release_status: int) -> void:
+	if _selected_object_kind != &"track":
+		return
+	var result := session.set_track_release(_selected_object_id, release_status)
+	_status_label.text = "Trackfreigabe geändert." if result.success else "Freigabe abgelehnt: %s" % result.reason
+
+
+func _cycle_protection_priority() -> void:
+	if _selected_object_kind != &"infrastructure":
+		return
+	var priorities: Dictionary = session.defenses.get_rules().infrastructure_priorities.duplicate(true)
+	var current := float(priorities.get(String(_selected_object_id), 1.0))
+	priorities[String(_selected_object_id)] = 1.0 if current >= 3.0 else current + 1.0
+	var result := session.set_defense_rules({"infrastructure_priorities": priorities})
+	_status_label.text = "Schutzpriorität geändert." if result.success else "Regel abgelehnt: " + "; ".join(result.errors)
+	_refresh_ui()
 
 
 func _on_event_added(event: Dictionary) -> void:
 	_audio.handle_event(event)
 	var seconds := int(event.simulation_time)
-	_event_list.add_item("%02d:%02d  %-14s  %s" % [seconds / 60, seconds % 60, event.category, event.type])
+	_event_list.add_item("%02d:%02d  %-14s  %s" % [seconds / 60, seconds % 60, event.category, _event_label(StringName(event.type))])
+	match StringName(event.type):
+		&"target_assigned":
+			_status_label.text = "Abwehr verfolgt den Kontakt. Zielreaktion läuft automatisch."
+		&"engagement_succeeded":
+			_status_label.text = "Kontakt erfolgreich abgewehrt."
+		&"engagement_failed":
+			_status_label.text = "Abwehrversuch fehlgeschlagen. Das System lädt nach und versucht es erneut."
+		&"threat_target_reached":
+			_status_label.text = "Warnung: Ein Kontakt hat sein Ziel erreicht."
 	while _event_list.item_count > 80:
 		_event_list.remove_item(0)
 	_event_list.select(_event_list.item_count - 1)
 	_event_list.ensure_current_is_visible()
+
+
+func _event_label(type: StringName) -> String:
+	return {
+		&"track_created": "KONTAKT ERFASST",
+		&"target_assigned": "ZIEL ZUGEWIESEN",
+		&"engagement_succeeded": "KONTAKT ABGEWEHRT",
+		&"engagement_failed": "ABWEHR FEHLGESCHLAGEN",
+		&"threat_target_reached": "ZIEL GETROFFEN",
+		&"mission_ended": "MISSION BEENDET",
+	}.get(type, String(type).to_upper())
 
 
 func _set_briefing_visible(visible: bool) -> void:

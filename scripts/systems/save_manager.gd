@@ -16,6 +16,7 @@ func save_session(session: GameSession, path: String) -> Dictionary:
 		"time_scale": snapshot.time_scale,
 		"placements": snapshot.placements,
 		"defense_rules": snapshot.defense_rules,
+		"player_commands": snapshot.player_commands,
 		"expected_snapshot": snapshot,
 	}
 	var temporary_path := path + ".tmp"
@@ -54,7 +55,11 @@ func load_session(path: String) -> Dictionary:
 	scenario.seed = int(data.seed)
 	var session := GameSession.new()
 	session.initialize(scenario)
-	for placement_data in data.placements:
+	var saved_placements: Array = data.placements.duplicate(true)
+	saved_placements.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		return String(left.get("id", "")) < String(right.get("id", ""))
+	)
+	for placement_data in saved_placements:
 		var position_data: Dictionary = placement_data.position
 		var result := session.place_system(
 			StringName(placement_data.definition_id),
@@ -62,13 +67,24 @@ func load_session(path: String) -> Dictionary:
 		)
 		if not result.success:
 			return {"success": false, "errors": ["Saved placement could not be restored: " + str(result)]}
-	session.defenses.set_rules(data.defense_rules)
+	var command_index := 0
+	var commands: Array = data.player_commands
 	if int(data.phase) != GameSession.Phase.PREPARATION:
 		var start_result := session.start_mission()
 		if not start_result.success:
 			return {"success": false, "errors": ["Saved running mission could not be started"]}
 		for tick in int(data.tick):
+			while command_index < commands.size() and int(commands[command_index].tick) == tick:
+				session.replay_player_command(commands[command_index])
+				command_index += 1
 			session.advance(GameSession.TICK_DURATION)
+		while command_index < commands.size() and int(commands[command_index].tick) == int(data.tick):
+			session.replay_player_command(commands[command_index])
+			command_index += 1
+	else:
+		while command_index < commands.size() and int(commands[command_index].tick) == 0:
+			session.replay_player_command(commands[command_index])
+			command_index += 1
 	session.set_time_scale(float(data.time_scale))
 
 	var actual_snapshot := session.get_persistence_snapshot()
@@ -87,7 +103,7 @@ func snapshots_match(first: Dictionary, second: Dictionary) -> bool:
 
 func _validate_save_data(data: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
-	for key in ["format_version", "scenario_path", "scenario_id", "seed", "phase", "tick", "time_scale", "placements", "defense_rules", "expected_snapshot"]:
+	for key in ["format_version", "scenario_path", "scenario_id", "seed", "phase", "tick", "time_scale", "placements", "defense_rules", "player_commands", "expected_snapshot"]:
 		if not data.has(key):
 			errors.append("Save file is missing field '%s'" % key)
 	if not errors.is_empty():
@@ -98,7 +114,7 @@ func _validate_save_data(data: Dictionary) -> Array[String]:
 		errors.append("Referenced scenario does not exist")
 	if int(data.tick) < 0:
 		errors.append("Saved tick cannot be negative")
-	if not data.placements is Array or not data.defense_rules is Dictionary or not data.expected_snapshot is Dictionary:
+	if not data.placements is Array or not data.defense_rules is Dictionary or not data.player_commands is Array or not data.expected_snapshot is Dictionary:
 		errors.append("Save file contains invalid collection fields")
 	return errors
 

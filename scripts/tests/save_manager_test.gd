@@ -42,6 +42,11 @@ func _running_session() -> Variant:
 	session.start_mission()
 	for tick in 75:
 		session.advance(0.1)
+	var tracks: Array = session.fusion.get_active_tracks()
+	_expect(not tracks.is_empty(), "Save fixture did not produce a controllable track")
+	if not tracks.is_empty():
+		session.set_track_priority(tracks[0].id, TrackState.Priority.CRITICAL, "Save fixture")
+		session.set_track_release(tracks[0].id, TrackState.ReleaseStatus.BLOCKED)
 	return session
 
 

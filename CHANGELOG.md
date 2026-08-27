@@ -4,6 +4,18 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ## [Unveröffentlicht]
 
+### Hinzugefügt
+
+- versionierter, automatisch validierter Szenariokatalog mit Kampagnenmetadaten
+- Hauptmenü und datengetriebene Missionsauswahl mit Tastaturnavigation
+- lokales Kampagnenprofil mit Freischaltungen, Ergebnissen und sicherem Zurücksetzen
+- persistentes Einstellungsmodell mit sicheren Defaults und Konfliktprüfung für Tastenbelegungen
+- gemeinsames UI-Theme und dokumentiertes Designsystem für drei Zielauflösungen
+- manuelle Trackpriorität sowie Freigabe, Sperre und Rücknahme über protokollierte Befehle
+- validierte Einsatzregeln und erweiterte Erklärungen der automatischen Zielauswahl
+- acht zusätzliche automatisierte Testfälle für Katalog, App-Navigation, Profil, Einstellungen und Zielsteuerung
+- Tutorial Mission 1 mit eigener, fehlertoleranter Übungskonfiguration, verständlicherem Automatik-Hinweis und verbindlichem Unbeschädigt-Erfolgstest
+
 ### Geplant
 
 - v0.5 Public Demo mit handgefertigter Mini-Kampagne

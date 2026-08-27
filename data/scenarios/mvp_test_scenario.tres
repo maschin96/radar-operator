@@ -18,6 +18,11 @@
 script = ExtResource("1")
 scenario_id = &"mvp_test_scenario"
 display_name = "Operation Morgenwache"
+summary = "Freies Vertical-Slice-Szenario mit drei Schutzgütern und einer gemischten Angriffswelle."
+campaign_order = 2
+unlock_requires = PackedStringArray("tutorial_mission_1")
+expected_duration_minutes = 15
+learning_objectives = PackedStringArray("Sensorabdeckung planen", "Mehrere Schutzgüter priorisieren", "Missionsauswertung interpretieren")
 briefing = "Schützen Sie das Kommandozentrum, das Kraftwerk und die Fabrik vor der ersten Angriffswelle."
 world_size = Vector2(2000, 1200)
 starting_budget = 2500

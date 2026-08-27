@@ -78,6 +78,13 @@ func _test_guided_mission_flow() -> void:
 	_expect(not main.tutorial.is_active(), "Tutorial remained active after mission evaluation")
 	_expect(main.mission_report != null, "Tutorial mission produced no mission report")
 	_expect(not main.get_node("TutorialPanel").visible, "Tutorial panel remained visible after completion")
+	_expect(main.session.infrastructure.get_mission_status() == InfrastructureSystem.MissionStatus.VICTORY, "Guided tutorial path did not end in victory")
+	var protected_target: InfrastructureState = main.session.infrastructure.get_state(&"tutorial_power")
+	_expect(is_equal_approx(protected_target.integrity, protected_target.maximum_integrity), "Guided tutorial path allowed damage to the protected infrastructure")
+	if main.mission_report != null:
+		var metrics: Dictionary = main.mission_report.get_metrics()
+		_expect(int(metrics.engagements_succeeded) >= 1, "Tutorial defense never completed a successful engagement")
+		_expect(int(metrics.targets_reached) == 0, "Tutorial contact reached the protected target")
 
 	main.queue_free()
 	await process_frame

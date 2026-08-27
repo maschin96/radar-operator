@@ -33,7 +33,7 @@ func _run() -> void:
 func _test_catalog_and_layout(main: Variant) -> void:
 	var ui_state: Dictionary = main.get_ui_state()
 	_expect(ui_state.catalog_count == 2, "Tutorial UI does not expose its sensor and defense")
-	for viewport_size in [Vector2(1920.0, 1080.0), Vector2(2560.0, 1440.0)]:
+	for viewport_size in [Vector2(1280.0, 720.0), Vector2(1920.0, 1080.0), Vector2(2560.0, 1440.0)]:
 		main.size = viewport_size
 		await process_frame
 		var map: Control = main.get_node("Margin/Layout/Body/TacticalMap")
