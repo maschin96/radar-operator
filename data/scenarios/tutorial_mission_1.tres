@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="ScenarioDefinition" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/core/scenario_definition.gd" id="1"]
-[ext_resource type="Resource" path="res://data/sensors/sensor_early_warning.tres" id="2"]
-[ext_resource type="Resource" path="res://data/defenses/defense_short_range.tres" id="3"]
-[ext_resource type="Resource" path="res://data/threats/threat_swift.tres" id="4"]
+[ext_resource type="Resource" path="res://data/tutorial/sensor_tutorial_early_warning.tres" id="2"]
+[ext_resource type="Resource" path="res://data/tutorial/defense_tutorial_short_range.tres" id="3"]
+[ext_resource type="Resource" path="res://data/tutorial/threat_tutorial_contact.tres" id="4"]
 [ext_resource type="Resource" path="res://data/infrastructure/infrastructure_power.tres" id="5"]
 [ext_resource type="Resource" path="res://data/scenarios/tutorial_mission_1_wave.tres" id="6"]
 
@@ -11,7 +11,11 @@
 script = ExtResource("1")
 scenario_id = &"tutorial_mission_1"
 display_name = "Tutorial Mission 1 – Erste Wachschicht"
-briefing = "Willkommen in der Wachschicht. Ein einzelner, deutlich erfassbarer Kontakt wird das Kraftwerk anfliegen. Bauen Sie ein einfaches Sensornetz und sichern Sie das Ziel mit einem Kurzstreckensystem. Die Einsatzleitung begleitet jeden Schritt."
+summary = "Bauen Sie ein erstes Sensornetz auf und schützen Sie ein Kraftwerk vor einem klar erkennbaren Kontakt."
+campaign_order = 1
+expected_duration_minutes = 10
+learning_objectives = PackedStringArray("Sensor und Abwehr platzieren", "Tracks lesen", "Simulationszeit steuern")
+briefing = "Willkommen in der Wachschicht. Ein einzelner, deutlich erfassbarer Übungskontakt wird das Kraftwerk anfliegen. Bauen Sie ein einfaches Sensornetz und sichern Sie das Ziel mit einem Kurzstreckensystem. Der Kontakt wird automatisch bekämpft, sobald er ausreichend klassifiziert und in Reichweite ist; ein direkter Schussbefehl ist nicht nötig."
 world_size = Vector2(2000, 1200)
 starting_budget = 1200
 seed = 10101
@@ -56,7 +60,7 @@ tutorial_steps = Array[Dictionary]([{
 }, {
 "definition_id": &"defense_short_range",
 "id": &"place_defense",
-"instruction": "Stellen Sie die Abwehr nahe beim Kraftwerk auf. Halten Sie Abstand zum bereits platzierten Sensor.",
+"instruction": "Stellen Sie die Abwehr nahe beim Kraftwerk auf. Der grüne Reichweitenkreis muss den Anflugweg abdecken. Halten Sie Abstand zum bereits platzierten Sensor.",
 "title": "Objektschutz aufbauen",
 "trigger": &"system_placed"
 }, {
@@ -78,7 +82,7 @@ tutorial_steps = Array[Dictionary]([{
 "trigger": &"track_selected"
 }, {
 "id": &"resume_simulation",
-"instruction": "Starten Sie die Zeit mit 1×, 2× oder 4×. Die automatische Freigabe übernimmt ausreichend klassifizierte Ziele.",
+"instruction": "Starten Sie die Zeit zunächst mit 1×. Sie müssen nicht auf den Kontakt schießen: Die automatische Freigabe weist ihn zu, sobald Klassifikation, Reichweite und Bereitschaft ausreichen.",
 "minimum_scale": 1.0,
 "title": "Abwehr beobachten",
 "trigger": &"simulation_resumed"

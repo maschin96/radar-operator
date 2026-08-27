@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/app/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/tactical_map.tscn" id="2_map"]
 [ext_resource type="Script" path="res://scripts/ui/audio_manager.gd" id="3_audio"]
+[ext_resource type="Theme" path="res://data/ui/radar_theme.tres" id="4_theme"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -12,6 +13,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
+theme = ExtResource("4_theme")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -194,6 +196,46 @@ layout_mode = 2
 button_pressed = true
 text = "Automatische Freigabe"
 
+[node name="MinimumClassification" type="OptionButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Niedrigste Klassifikation für automatische Zuweisungen"
+
+[node name="AllowRedundant" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Redundante Einsätze"
+
+[node name="TrackPriority" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "PRIORITÄT: NORMAL"
+
+[node name="AuthorizeTrack" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "TRACK FREIGEBEN"
+
+[node name="BlockTrack" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "TRACK SPERREN"
+
+[node name="ResetTrackRelease" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "FREIGABE ZURÜCKNEHMEN"
+
+[node name="ProtectionPriority" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "SCHUTZPRIORITÄT: NORMAL"
+
 [node name="HighContrast" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -219,6 +261,11 @@ text = "SPIELSTAND SPEICHERN"
 unique_name_in_owner = true
 layout_mode = 2
 text = "SPIELSTAND LADEN"
+
+[node name="MainMenu" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "ZUM HAUPTMENÜ"
 
 [node name="RestartSame" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
 unique_name_in_owner = true

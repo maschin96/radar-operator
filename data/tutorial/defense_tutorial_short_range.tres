@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DefenseDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/defense_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"defense_short_range"
+display_name = "Kurzstreckensystem"
+description = "Tutorialkonfiguration mit schneller Zielverfolgung und gut sichtbarer Reaktion."
+purchase_cost = 480
+engagement_range = 360.0
+minimum_range = 10.0
+tracking_time = 0.35
+reload_time = 1.2
+ammunition = 6
+base_success_chance = 1.0
+power_demand = 9.0

@@ -20,6 +20,7 @@ var defenses: DefenseSystem
 var simulation: SimulationCore
 var events: Array[Dictionary] = []
 var replay_frames: Array[Dictionary] = []
+var player_commands: Array[Dictionary] = []
 
 var _event_cursors: Dictionary = {}
 var _next_replay_time: float = 0.0
@@ -30,6 +31,7 @@ func initialize(scenario_definition: ScenarioDefinition) -> void:
 	phase = Phase.PREPARATION
 	events.clear()
 	replay_frames.clear()
+	player_commands.clear()
 	_event_cursors.clear()
 	_next_replay_time = 0.0
 	placement = PlacementSystem.new()
@@ -61,9 +63,69 @@ func set_time_scale(scale: float) -> bool:
 	return simulation.set_time_scale(scale)
 
 
-func set_defense_rules(rules: Dictionary) -> void:
-	defenses.set_rules(rules)
-	_append_event(&"defense_rules_changed", float(simulation.get_snapshot().simulation_time), {"rules": defenses.get_rules()})
+func set_defense_rules(rules: Dictionary) -> Dictionary:
+	var result := defenses.set_rules(rules)
+	if not result.success:
+		_append_event(&"defense_rules_rejected", _simulation_time(), {"rules": rules.duplicate(true), "errors": result.errors})
+		return result
+	_record_player_command(&"set_defense_rules", {"rules": rules.duplicate(true)})
+	_append_event(&"defense_rules_changed", _simulation_time(), {"rules": defenses.get_rules()})
+	return result
+
+
+func set_track_priority(track_id: StringName, priority: int, reason: String = "") -> Dictionary:
+	var track := fusion.get_track(track_id)
+	if phase != Phase.RUNNING:
+		return _reject_track_command(&"track_priority_rejected", track_id, "mission_not_running")
+	if track == null:
+		return _reject_track_command(&"track_priority_rejected", track_id, "track_not_found")
+	if priority < TrackState.Priority.NORMAL or priority > TrackState.Priority.CRITICAL:
+		return _reject_track_command(&"track_priority_rejected", track_id, "invalid_priority")
+	track.priority = priority as TrackState.Priority
+	track.priority_reason = reason.strip_edges()
+	_record_player_command(&"set_track_priority", {"track_id": String(track_id), "priority": priority, "reason": track.priority_reason})
+	_append_event(&"track_priority_changed", _simulation_time(), {
+		"track_id": String(track_id),
+		"priority": priority,
+		"reason": track.priority_reason,
+		"result": "accepted",
+	})
+	state_changed.emit()
+	return {"success": true, "track_id": track_id, "priority": priority}
+
+
+func set_track_release(track_id: StringName, release_status: int) -> Dictionary:
+	var track := fusion.get_track(track_id)
+	if phase != Phase.RUNNING:
+		return _reject_track_command(&"track_release_rejected", track_id, "mission_not_running")
+	if track == null:
+		return _reject_track_command(&"track_release_rejected", track_id, "track_not_found")
+	if release_status < TrackState.ReleaseStatus.DEFAULT or release_status > TrackState.ReleaseStatus.BLOCKED:
+		return _reject_track_command(&"track_release_rejected", track_id, "invalid_release_status")
+	track.release_status = release_status as TrackState.ReleaseStatus
+	if track.release_status == TrackState.ReleaseStatus.AUTHORIZED:
+		defenses.authorize_track(track_id)
+	else:
+		defenses.revoke_track_authorization(track_id)
+	_record_player_command(&"set_track_release", {"track_id": String(track_id), "release_status": release_status})
+	_append_event(&"track_release_changed", _simulation_time(), {
+		"track_id": String(track_id),
+		"release_status": release_status,
+		"result": "accepted",
+	})
+	state_changed.emit()
+	return {"success": true, "track_id": track_id, "release_status": release_status}
+
+
+func replay_player_command(command: Dictionary) -> Dictionary:
+	match StringName(command.get("type", "")):
+		&"set_track_priority":
+			return set_track_priority(StringName(command.data.track_id), int(command.data.priority), String(command.data.get("reason", "")))
+		&"set_track_release":
+			return set_track_release(StringName(command.data.track_id), int(command.data.release_status))
+		&"set_defense_rules":
+			return set_defense_rules(command.data.rules)
+	return {"success": false, "reason": "unknown_command"}
 
 
 func place_system(definition_id: StringName, position: Vector2) -> Dictionary:
@@ -179,6 +241,7 @@ func get_persistence_snapshot() -> Dictionary:
 		"sensors": sensor_data,
 		"defenses": defense_data,
 		"defense_rules": defenses.get_rules(),
+		"player_commands": player_commands.duplicate(true),
 		"mission_status": infrastructure.get_mission_status(),
 		"event_count": events.size(),
 	}
@@ -255,6 +318,27 @@ func _append_event(
 	}
 	events.append(event)
 	event_added.emit(event)
+
+
+func _record_player_command(type: StringName, data: Dictionary) -> void:
+	player_commands.append({
+		"type": String(type),
+		"tick": int(simulation.get_snapshot().tick),
+		"data": data.duplicate(true),
+	})
+
+
+func _reject_track_command(type: StringName, track_id: StringName, reason: String) -> Dictionary:
+	_append_event(type, _simulation_time(), {
+		"track_id": String(track_id),
+		"result": "rejected",
+		"reason": reason,
+	})
+	return {"success": false, "track_id": track_id, "reason": reason}
+
+
+func _simulation_time() -> float:
+	return float(simulation.get_snapshot().simulation_time)
 
 
 func _record_replay_frame(simulation_time: float) -> void:

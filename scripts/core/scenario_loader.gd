@@ -30,10 +30,20 @@ func load_scenario(path: String) -> Dictionary:
 
 func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 	var errors: Array[String] = []
+	if scenario.content_version != ScenarioDefinition.CURRENT_CONTENT_VERSION:
+		errors.append("Scenario content version %d is incompatible; supported version is %d" % [scenario.content_version, ScenarioDefinition.CURRENT_CONTENT_VERSION])
 	if scenario.scenario_id.is_empty():
 		errors.append("Scenario id is empty")
 	if scenario.display_name.strip_edges().is_empty():
 		errors.append("Scenario display name is empty")
+	if scenario.summary.strip_edges().is_empty():
+		errors.append("Scenario summary is empty")
+	if scenario.campaign_order < 0:
+		errors.append("Scenario campaign order cannot be negative")
+	if scenario.expected_duration_minutes <= 0:
+		errors.append("Scenario expected duration must be positive")
+	if scenario.learning_objectives.is_empty():
+		errors.append("Scenario must define at least one learning objective")
 	if scenario.world_size.x <= 0.0 or scenario.world_size.y <= 0.0:
 		errors.append("Scenario world size must be positive")
 	if scenario.starting_budget < 0:

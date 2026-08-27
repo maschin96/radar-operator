@@ -1,8 +1,19 @@
 class_name ScenarioDefinition
 extends Resource
 
+const CURRENT_CONTENT_VERSION := 1
+
+@export_group("Catalog Metadata")
+@export var content_version: int = CURRENT_CONTENT_VERSION
 @export var scenario_id: StringName
 @export var display_name: String
+@export_multiline var summary: String
+@export var campaign_order: int = 0
+@export var unlock_requires: PackedStringArray = PackedStringArray()
+@export_range(1, 240, 1) var expected_duration_minutes: int = 15
+@export var learning_objectives: PackedStringArray = PackedStringArray()
+
+@export_group("Mission")
 @export_multiline var briefing: String
 @export var world_size := Vector2(2000.0, 1200.0)
 @export var starting_budget: int = 2500

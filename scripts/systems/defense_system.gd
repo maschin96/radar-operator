@@ -24,6 +24,7 @@ var _rules := {
 	"minimum_classification": &"suspicious",
 	"automatic_release": true,
 	"allow_redundant_engagement": false,
+	"infrastructure_priorities": {},
 }
 
 
@@ -53,10 +54,33 @@ func add_defense(entity: EntityState) -> DefenseState:
 	return defense
 
 
-func set_rules(rules: Dictionary) -> void:
+func set_rules(rules: Dictionary) -> Dictionary:
+	var merged := _rules.duplicate(true)
 	for key in rules:
-		if _rules.has(key):
-			_rules[key] = rules[key]
+		if not _rules.has(key):
+			return {"success": false, "errors": ["Unbekannte Einsatzregel '%s'." % key]}
+		merged[key] = rules[key]
+	var errors := validate_rules(merged)
+	if not errors.is_empty():
+		return {"success": false, "errors": errors}
+	_rules = merged
+	return {"success": true, "rules": get_rules()}
+
+
+func validate_rules(rules: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	var minimum := StringName(rules.get("minimum_classification", ""))
+	if not CLASSIFICATION_RANK.has(minimum):
+		errors.append("Unbekannte Mindestklassifikation '%s'." % minimum)
+	var priorities: Variant = rules.get("infrastructure_priorities", {})
+	if not priorities is Dictionary:
+		errors.append("Schutzprioritäten müssen als Zuordnung vorliegen.")
+	else:
+		for infrastructure_id in priorities:
+			var priority := float(priorities[infrastructure_id])
+			if priority < 0.0 or priority > 3.0:
+				errors.append("Schutzpriorität für '%s' muss zwischen 0 und 3 liegen." % infrastructure_id)
+	return errors
 
 
 func get_rules() -> Dictionary:
@@ -65,6 +89,10 @@ func get_rules() -> Dictionary:
 
 func authorize_track(track_id: StringName) -> void:
 	_manual_authorizations[track_id] = true
+
+
+func revoke_track_authorization(track_id: StringName) -> void:
+	_manual_authorizations.erase(track_id)
 
 
 func process_tick(delta: float, simulation_time: float, tracks: Array) -> void:
@@ -189,6 +217,10 @@ func _can_assign(
 		return false
 	if not bool(_rules.automatic_release) and not _manual_authorizations.has(track.id):
 		return false
+	if track.release_status == TrackState.ReleaseStatus.BLOCKED:
+		return false
+	if not bool(_rules.automatic_release) and track.release_status != TrackState.ReleaseStatus.AUTHORIZED and not _manual_authorizations.has(track.id):
+		return false
 	var assignment_count := int(assigned_counts.get(track.id, 0))
 	if assignment_count == 0 or bool(_rules.allow_redundant_engagement):
 		return true
@@ -213,6 +245,7 @@ func _score_track(
 	var success_chance := _success_chance(defense, definition, track)
 	var success_score := success_chance * 20.0
 	var duplicate_penalty := assignment_count * 25.0
+	var priority_score: float = [0.0, 35.0, 80.0][track.priority]
 	return {
 		"result": "assigned",
 		"track_id": String(track.id),
@@ -221,9 +254,10 @@ func _score_track(
 		"success_chance": success_chance,
 		"success_score": success_score,
 		"duplicate_penalty": duplicate_penalty,
+		"priority_score": priority_score,
 		"threatened_infrastructure_id": String(threat_info.infrastructure_id),
 		"time_to_impact": threat_info.time_to_impact,
-		"total_score": classification_score + urgency_score + success_score - duplicate_penalty,
+		"total_score": classification_score + urgency_score + success_score + priority_score - duplicate_penalty,
 	}
 
 
@@ -238,6 +272,7 @@ func _estimate_infrastructure_threat(track: TrackState) -> Dictionary:
 		var time := track.estimated_position.distance_to(entity.position) / speed
 		var definition := _infrastructure_definitions.get(entity.definition_id) as InfrastructureDefinition
 		var value := definition.protection_value if definition != null else 1.0
+		value *= float((_rules.infrastructure_priorities as Dictionary).get(String(entity.id), 1.0))
 		var weighted_time := time / maxf(value, 0.1)
 		if weighted_time < best_time:
 			best_time = weighted_time

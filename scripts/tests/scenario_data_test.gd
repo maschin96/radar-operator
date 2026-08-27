@@ -1,6 +1,7 @@
 extends SceneTree
 
 const LoaderScript := preload("res://scripts/core/scenario_loader.gd")
+const CatalogScript := preload("res://scripts/core/scenario_catalog.gd")
 const ScenarioScript := preload("res://scripts/core/scenario_definition.gd")
 const SensorScript := preload("res://scripts/core/sensor_definition.gd")
 const EntityStateScript := preload("res://scripts/core/entity_state.gd")
@@ -15,6 +16,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	_test_valid_scenario_loads()
+	_test_catalog_discovers_scenarios_in_campaign_order()
+	_test_incompatible_content_version_is_rejected()
 	_test_duplicate_definition_is_rejected()
 	_test_missing_definition_is_rejected()
 	_test_invalid_definition_values_are_rejected()
@@ -25,7 +28,7 @@ func _run() -> void:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("SCENARIO DATA TESTS PASSED: 5 test cases")
+	print("SCENARIO DATA TESTS PASSED: 7 test cases")
 	quit(0)
 
 
@@ -36,6 +39,22 @@ func _test_valid_scenario_loads() -> void:
 	if result.success:
 		var entities: Array = loader.instantiate_starting_entities(result.scenario)
 		_expect(entities.size() == 3, "Test scenario did not instantiate three infrastructure entities")
+
+
+func _test_catalog_discovers_scenarios_in_campaign_order() -> void:
+	var result: Dictionary = CatalogScript.new().discover()
+	_expect(result.success, "Scenario catalog failed validation: " + str(result.errors))
+	if result.success:
+		_expect(result.scenarios.size() == 2, "Scenario catalog did not discover both missions")
+		_expect(result.scenarios[0].scenario_id == &"tutorial_mission_1", "Scenario catalog order is not deterministic")
+
+
+func _test_incompatible_content_version_is_rejected() -> void:
+	var loader: Variant = LoaderScript.new()
+	var scenario: Variant = _minimal_scenario()
+	scenario.content_version = ScenarioDefinition.CURRENT_CONTENT_VERSION + 1
+	var errors: Array[String] = loader.validate_scenario(scenario)
+	_expect(_contains_text(errors, "content version"), "Incompatible scenario content version was not rejected")
 
 
 func _test_duplicate_definition_is_rejected() -> void:
@@ -82,6 +101,8 @@ func _minimal_scenario() -> Variant:
 	var scenario: Variant = ScenarioScript.new()
 	scenario.scenario_id = &"validation_test"
 	scenario.display_name = "Validation Test"
+	scenario.summary = "Minimal valid scenario used by data validation tests."
+	scenario.learning_objectives = PackedStringArray(["Validate scenario data"])
 	scenario.world_size = Vector2(100.0, 100.0)
 	scenario.starting_budget = 1
 	scenario.mission_duration = 1.0

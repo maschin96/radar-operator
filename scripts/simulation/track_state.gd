@@ -6,6 +6,9 @@ const CLASSIFICATION_AIR_CONTACT := &"air_contact"
 const CLASSIFICATION_SUSPICIOUS := &"suspicious"
 const CLASSIFICATION_HOSTILE := &"hostile"
 
+enum Priority { NORMAL, HIGH, CRITICAL }
+enum ReleaseStatus { DEFAULT, AUTHORIZED, BLOCKED }
+
 var id: StringName
 var estimated_position: Vector2
 var estimated_velocity: Vector2 = Vector2.ZERO
@@ -20,6 +23,9 @@ var reporting_sensors: Dictionary = {}
 var debug_source_entities: Dictionary = {}
 var active: bool = true
 var last_update_summary: Dictionary = {}
+var priority: Priority = Priority.NORMAL
+var priority_reason: String = ""
+var release_status: ReleaseStatus = ReleaseStatus.DEFAULT
 
 
 func _init(
@@ -65,4 +71,7 @@ func to_player_dictionary() -> Dictionary:
 		"measurement_count": measurement_count,
 		"reporting_sensors": reporting_sensors.keys().map(func(value: Variant) -> String: return String(value)),
 		"last_update_summary": last_update_summary.duplicate(true),
+		"priority": priority,
+		"priority_reason": priority_reason,
+		"release_status": release_status,
 	}

@@ -2,6 +2,8 @@
 
 Danke für dein Interesse an Radar Operator. Kleine, klar abgegrenzte Änderungen sind am einfachsten zu prüfen und zusammenzuführen.
 
+Der allgemeine Ablauf für Branches, Commits, Pull Requests, Reviews und Releases ist im [agilen Git-Workflow](AGILE_GIT_WORKFLOW.md) definiert. Die folgenden Hinweise ergänzen ihn um projektspezifische Anforderungen.
+
 ## Entwicklungsumgebung
 
 1. Godot 4.7.2 installieren.
