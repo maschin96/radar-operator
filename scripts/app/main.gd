@@ -294,6 +294,9 @@ func _refresh_details(snapshot: Dictionary) -> void:
 			_set_track_controls_visible(true)
 			%TrackPriority.text = "PRIORITÄT: %s" % TrackState.Priority.keys()[object.priority]
 			_details.text = "[b]%s[/b]\nKlassifikation: %s\nKonfidenz: %.0f%%\nUnsicherheit: %.1f\nMessungen: %d\nSensoren: %d\nPriorität: %s\nFreigabe: %s\n\nLetzte Fusion:\n%s" % [object.id, object.classification, object.classification_confidence * 100.0, object.uncertainty_radius, object.measurement_count, object.reporting_sensors.size(), TrackState.Priority.keys()[object.priority], TrackState.ReleaseStatus.keys()[object.release_status], str(object.last_update_summary)]
+			_details.text += "\nBegründung: " + object.priority_reason + "\n\nEinsatzbereitschaft:\n"
+			for candidate in session.defenses.get_track_eligibility(object):
+				_details.text += "%s: %s\n" % [candidate.defense_id, DefenseSystem.reason_text(candidate.reason)]
 		elif _selected_object_kind == &"system":
 			var definition := _definition(object.definition_id)
 			var decision: Dictionary = {}
@@ -372,7 +375,7 @@ func _set_selected_track_release(release_status: int) -> void:
 	if _selected_object_kind != &"track":
 		return
 	var result := session.set_track_release(_selected_object_id, release_status)
-	_status_label.text = "Trackfreigabe geändert." if result.success else "Freigabe abgelehnt: %s" % result.reason
+	_status_label.text = "Trackfreigabe geändert." if result.success else "Freigabe abgelehnt: " + DefenseSystem.reason_text(result.reason)
 
 
 func _cycle_protection_priority() -> void:

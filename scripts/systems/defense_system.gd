@@ -28,6 +28,26 @@ var _rules := {
 }
 
 
+static func reason_text(reason: String) -> String:
+	return {
+		"": "Einsatz möglich",
+		"track_not_found": "Track nicht mehr verfügbar",
+		"system_offline": "System nicht einsatzbereit",
+		"ammunition_empty": "Keine Munition",
+		"system_reloading": "System lädt nach",
+		"system_busy": "System verfolgt einen anderen Track",
+		"out_of_range": "Außerhalb der Einsatzreichweite",
+		"classification_too_low": "Klassifikation unter der Mindestanforderung",
+		"track_blocked": "Track manuell gesperrt",
+		"authorization_required": "Manuelle Freigabe fehlt",
+		"redundant_engagement": "Track bereits einem System zugewiesen",
+		"no_eligible_system": "Kein einsatzbereites System vorhanden",
+		"mission_not_running": "Mission läuft nicht",
+		"invalid_priority": "Ungültige Prioritätsstufe",
+		"invalid_release_status": "Ungültiger Freigabestatus",
+	}.get(reason, reason)
+
+
 func configure(scenario: ScenarioDefinition, infrastructure: Array = []) -> void:
 	_definitions.clear()
 	_infrastructure_definitions.clear()
@@ -95,6 +115,14 @@ func revoke_track_authorization(track_id: StringName) -> void:
 	_manual_authorizations.erase(track_id)
 
 
+func get_track_eligibility(track: TrackState, manual_release: bool = false) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for defense in get_defenses():
+		var reason := _assignment_rejection(defense, _definitions[defense.definition_id], track, _current_assignment_counts(), manual_release)
+		result.append({"defense_id": String(defense.id), "eligible": reason.is_empty(), "reason": reason})
+	return result
+
+
 func process_tick(delta: float, simulation_time: float, tracks: Array) -> void:
 	var tracks_by_id: Dictionary = {}
 	for track in tracks:
@@ -132,6 +160,8 @@ func _update_defense(
 	assigned_counts: Dictionary
 ) -> void:
 	if not defense.active or not defense.operational or not defense.powered:
+		if not defense.assigned_track_id.is_empty():
+			_cancel_assignment(defense, assigned_counts, simulation_time, "system_offline")
 		defense.status = DefenseState.Status.OFFLINE
 		return
 	var definition := _definitions[defense.definition_id] as DefenseDefinition
@@ -144,17 +174,12 @@ func _update_defense(
 				defense.status = DefenseState.Status.READY if defense.ammunition > 0 else DefenseState.Status.DEPLETED
 		DefenseState.Status.TRACKING:
 			if not tracks_by_id.has(defense.assigned_track_id):
-				_record_event(&"assignment_lost", defense, defense.assigned_track_id, simulation_time)
-				_decrement_assignment(assigned_counts, defense.assigned_track_id)
-				defense.assigned_track_id = &""
-				defense.status = DefenseState.Status.READY
+				_cancel_assignment(defense, assigned_counts, simulation_time, "track_not_found")
 				return
 			var track := tracks_by_id[defense.assigned_track_id] as TrackState
-			if not _is_track_in_envelope(defense, definition, track):
-				_record_event(&"assignment_lost", defense, track.id, simulation_time)
-				_decrement_assignment(assigned_counts, track.id)
-				defense.assigned_track_id = &""
-				defense.status = DefenseState.Status.READY
+			var reason := _assignment_rejection(defense, definition, track, assigned_counts)
+			if not reason.is_empty():
+				_cancel_assignment(defense, assigned_counts, simulation_time, reason)
 				return
 			defense.tracking_remaining = maxf(defense.tracking_remaining - delta, 0.0)
 			if defense.tracking_remaining <= 0.0:
@@ -210,22 +235,52 @@ func _can_assign(
 	track: TrackState,
 	assigned_counts: Dictionary
 ) -> bool:
+	return _assignment_rejection(defense, definition, track, assigned_counts).is_empty()
+
+
+func _assignment_rejection(
+	defense: DefenseState, definition: DefenseDefinition, track: TrackState,
+	assigned_counts: Dictionary, manual_release: bool = false
+) -> String:
+	if not track.active or _neutralized_tracks.has(track.id):
+		return "track_not_found"
+	if not defense.active or not defense.operational or not defense.powered or defense.status == DefenseState.Status.OFFLINE:
+		return "system_offline"
+	if defense.ammunition <= 0:
+		return "ammunition_empty"
+	if defense.status == DefenseState.Status.RELOADING:
+		return "system_reloading"
+	if defense.status == DefenseState.Status.TRACKING and defense.assigned_track_id != track.id:
+		return "system_busy"
 	if not _is_track_in_envelope(defense, definition, track):
-		return false
+		return "out_of_range"
 	var minimum_rank: int = int(CLASSIFICATION_RANK.get(_rules.minimum_classification, 2))
 	if int(CLASSIFICATION_RANK.get(track.classification, 0)) < minimum_rank:
-		return false
-	if not bool(_rules.automatic_release) and not _manual_authorizations.has(track.id):
-		return false
-	if track.release_status == TrackState.ReleaseStatus.BLOCKED:
-		return false
-	if not bool(_rules.automatic_release) and track.release_status != TrackState.ReleaseStatus.AUTHORIZED and not _manual_authorizations.has(track.id):
-		return false
+		return "classification_too_low"
+	if not manual_release:
+		if track.release_status == TrackState.ReleaseStatus.BLOCKED:
+			return "track_blocked"
+		if not bool(_rules.automatic_release) and not _manual_authorizations.has(track.id):
+			return "authorization_required"
+	# An existing assignment does not compete against itself.
+	if defense.assigned_track_id == track.id:
+		return ""
 	var assignment_count := int(assigned_counts.get(track.id, 0))
 	if assignment_count == 0 or bool(_rules.allow_redundant_engagement):
-		return true
+		return ""
 	var threat_info := _estimate_infrastructure_threat(track)
-	return track.classification == &"hostile" and float(threat_info.time_to_impact) < 5.0
+	if track.classification == &"hostile" and float(threat_info.time_to_impact) < 5.0:
+		return ""
+	return "redundant_engagement"
+
+
+func _cancel_assignment(defense: DefenseState, counts: Dictionary, time: float, reason: String) -> void:
+	defense.last_decision = {"result": "cancelled", "track_id": String(defense.assigned_track_id), "reason": reason}
+	_record_event(&"assignment_lost", defense, defense.assigned_track_id, time, defense.last_decision)
+	_decrement_assignment(counts, defense.assigned_track_id)
+	defense.assigned_track_id = &""
+	defense.tracking_remaining = 0.0
+	defense.status = DefenseState.Status.READY if defense.ammunition > 0 else DefenseState.Status.DEPLETED
 
 
 func _is_track_in_envelope(defense: DefenseState, definition: DefenseDefinition, track: TrackState) -> bool:

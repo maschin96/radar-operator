@@ -74,6 +74,7 @@ func set_defense_rules(rules: Dictionary) -> Dictionary:
 
 
 func set_track_priority(track_id: StringName, priority: int, reason: String = "") -> Dictionary:
+	_record_player_command(&"set_track_priority", {"track_id": String(track_id), "priority": priority, "reason": reason.strip_edges()})
 	var track := fusion.get_track(track_id)
 	if phase != Phase.RUNNING:
 		return _reject_track_command(&"track_priority_rejected", track_id, "mission_not_running")
@@ -83,7 +84,6 @@ func set_track_priority(track_id: StringName, priority: int, reason: String = ""
 		return _reject_track_command(&"track_priority_rejected", track_id, "invalid_priority")
 	track.priority = priority as TrackState.Priority
 	track.priority_reason = reason.strip_edges()
-	_record_player_command(&"set_track_priority", {"track_id": String(track_id), "priority": priority, "reason": track.priority_reason})
 	_append_event(&"track_priority_changed", _simulation_time(), {
 		"track_id": String(track_id),
 		"priority": priority,
@@ -95,6 +95,7 @@ func set_track_priority(track_id: StringName, priority: int, reason: String = ""
 
 
 func set_track_release(track_id: StringName, release_status: int) -> Dictionary:
+	_record_player_command(&"set_track_release", {"track_id": String(track_id), "release_status": release_status})
 	var track := fusion.get_track(track_id)
 	if phase != Phase.RUNNING:
 		return _reject_track_command(&"track_release_rejected", track_id, "mission_not_running")
@@ -102,15 +103,22 @@ func set_track_release(track_id: StringName, release_status: int) -> Dictionary:
 		return _reject_track_command(&"track_release_rejected", track_id, "track_not_found")
 	if release_status < TrackState.ReleaseStatus.DEFAULT or release_status > TrackState.ReleaseStatus.BLOCKED:
 		return _reject_track_command(&"track_release_rejected", track_id, "invalid_release_status")
+	if release_status == TrackState.ReleaseStatus.AUTHORIZED:
+		var eligibility := defenses.get_track_eligibility(track, true)
+		var eligible := false
+		for candidate in eligibility:
+			eligible = eligible or candidate.eligible
+		if not eligible:
+			return _reject_track_command(&"track_release_rejected", track_id, "no_eligible_system" if eligibility.is_empty() else String(eligibility[0].reason))
 	track.release_status = release_status as TrackState.ReleaseStatus
 	if track.release_status == TrackState.ReleaseStatus.AUTHORIZED:
 		defenses.authorize_track(track_id)
 	else:
 		defenses.revoke_track_authorization(track_id)
-	_record_player_command(&"set_track_release", {"track_id": String(track_id), "release_status": release_status})
 	_append_event(&"track_release_changed", _simulation_time(), {
 		"track_id": String(track_id),
 		"release_status": release_status,
+		"reason": ["default_rules_restored", "manual_authorization", "manual_block"][release_status],
 		"result": "accepted",
 	})
 	state_changed.emit()

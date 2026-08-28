@@ -256,6 +256,9 @@ func _draw_tracks() -> void:
 		var color := Color("ff5d4a") if track.classification == &"hostile" else Color("8fffd1")
 		if not high_contrast:
 			color = Color("f16e58") if track.classification == &"hostile" else Color("78d5b1")
+		var marker := ["", "!", "!!"][track.priority] as String
+		marker += ["", " FREI", " GESPERRT"][track.release_status]
+		draw_string(ThemeDB.fallback_font, position + Vector2(12, -12), String(track.id) + " " + marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
 		draw_circle(position, radius, Color(color, 0.10))
 		draw_arc(position, radius, 0.0, TAU, 40, Color(color, 0.8), 1.5)
 		if not reduced_effects:

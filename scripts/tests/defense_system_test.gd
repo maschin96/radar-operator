@@ -22,13 +22,15 @@ func _run() -> void:
 	_test_manual_priority_changes_stable_target_order()
 	_test_manual_block_prevents_assignment()
 	_test_invalid_rule_profile_is_rejected()
+	_test_assignment_cancellation()
+	_test_manual_release_limits()
 
 	if not _failures.is_empty():
 		for failure in _failures:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("DEFENSE SYSTEM TESTS PASSED: 8 test cases")
+	print("DEFENSE SYSTEM TESTS PASSED: 10 test cases")
 	quit(0)
 
 
@@ -139,6 +141,40 @@ func _test_invalid_rule_profile_is_rejected() -> void:
 	var result: Dictionary = system.set_rules({"minimum_classification": &"imaginary"})
 	_expect(not result.success, "Invalid minimum classification was accepted")
 	_expect(system.get_rules() == before, "Rejected rule profile partially changed active rules")
+
+
+func _test_assignment_cancellation() -> void:
+	for cause in ["block", "revoke", "classification", "offline", "range"]:
+		var system: Variant = _system([{"id": &"d1", "definition_id": &"defense_short_range", "position": Vector2(500, 500)}])
+		var track: Variant = _track(&"T0001", Vector2(600, 500))
+		system.set_rules({"automatic_release": false})
+		system.authorize_track(track.id)
+		system.process_tick(0.1, 0.1, [track])
+		var defense: DefenseState = system.get_defenses()[0]
+		var ammunition := defense.ammunition
+		match cause:
+			"block": track.release_status = TrackState.ReleaseStatus.BLOCKED
+			"revoke": system.revoke_track_authorization(track.id)
+			"classification": track.classification = &"unknown"
+			"offline": defense.powered = false
+			"range": track.estimated_position = Vector2(1900, 1000)
+		system.process_tick(10.0, 10.1, [track])
+		_expect(defense.assigned_track_id.is_empty(), "Assignment survived " + cause)
+		_expect(defense.ammunition == ammunition, "Cancellation consumed ammunition: " + cause)
+		_expect(defense.last_decision.get("result") == "cancelled", "Cancellation missing decision: " + cause)
+		_expect(system.get_events().back().data.has("reason"), "Cancellation missing reason: " + cause)
+
+
+func _test_manual_release_limits() -> void:
+	var system: Variant = _system([{"id": &"d1", "definition_id": &"defense_short_range", "position": Vector2(500, 500)}])
+	var track: Variant = _track(&"T0001", Vector2(600, 500), &"unknown")
+	_expect(system.get_track_eligibility(track, true)[0].reason == "classification_too_low", "Manual release bypassed classification")
+	track.classification = &"hostile"
+	track.estimated_position = Vector2(1900, 1000)
+	_expect(system.get_track_eligibility(track, true)[0].reason == "out_of_range", "Manual release bypassed range")
+	track.estimated_position = Vector2(600, 500)
+	system.get_defenses()[0].ammunition = 0
+	_expect(system.get_track_eligibility(track, true)[0].reason == "ammunition_empty", "Manual release bypassed ammunition")
 
 
 func _expect(condition: bool, message: String) -> void:

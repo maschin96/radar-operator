@@ -47,6 +47,7 @@ func _running_session() -> Variant:
 	if not tracks.is_empty():
 		session.set_track_priority(tracks[0].id, TrackState.Priority.CRITICAL, "Save fixture")
 		session.set_track_release(tracks[0].id, TrackState.ReleaseStatus.BLOCKED)
+		session.set_track_release(&"missing_track", TrackState.ReleaseStatus.AUTHORIZED)
 	return session
 
 

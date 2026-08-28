@@ -87,6 +87,10 @@ Grün umrandete Flächen sind zulässige Bauzonen, rote Flächen sind gesperrt. 
 | `1`, `2`, `4` | Simulationsgeschwindigkeit |
 | `B` | Briefing ein- oder ausblenden |
 
+## Tracksteuerung
+
+Einen Track auf der Karte auswählen, dann in den Lagedetails priorisieren, freigeben, sperren oder auf die Standardregeln zurücksetzen. Manuelle Freigaben gelten nur bei ausreichender Klassifikation und mindestens einem verfügbaren System in Reichweite. Die Details nennen konkrete Hindernisse. Eine Sperre bricht laufende Einsätze beim nächsten Simulationstick ab; bei Pause wird keine Munition verbraucht. „Freigabe zurücknehmen“ stellt die aktiven Regeln wieder her: Bei automatischer Freigabe darf das System daher erneut zuweisen.
+
 ## Architektur
 
 Die Darstellung liest ausschließlich Snapshots der Simulation. Spieleraktionen werden über die `GameSession` an klar getrennte Systeme weitergegeben.

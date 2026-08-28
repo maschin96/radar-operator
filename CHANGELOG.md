@@ -16,6 +16,12 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 - acht zusätzliche automatisierte Testfälle für Katalog, App-Navigation, Profil, Einstellungen und Zielsteuerung
 - Tutorial Mission 1 mit eigener, fehlertoleranter Übungskonfiguration, verständlicherem Automatik-Hinweis und verbindlichem Unbeschädigt-Erfolgstest
 
+### Behoben
+
+- #6: Laufende Einsätze werden bei Sperre, fehlender Freigabe, Klassifikationsverlust, Reichweitenverlust oder Ausfall ohne Munitionsverbrauch abgebrochen.
+- Manuelle Freigaben prüfen Einsatzgrenzen; Ablehnungen mit Ursache und Zeitstempel bleiben über Save/Load erhalten.
+- Trackdetails erklären Einsatzbereitschaft je System; Kartenbeschriftungen zeigen Priorität und Freigabestatus.
+
 ### Geplant
 
 - v0.5 Public Demo mit handgefertigter Mini-Kampagne
