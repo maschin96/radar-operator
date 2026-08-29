@@ -168,112 +168,107 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="DetailLayout" type="VBoxContainer" parent="Margin/Layout/Body/DetailPanel/DetailMargin"]
+[node name="DetailScroll" type="ScrollContainer" parent="Margin/Layout/Body/DetailPanel/DetailMargin"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="DetailLayout" type="VBoxContainer" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll"]
+size_flags_horizontal = 3
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SelectionTitle" type="Label" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="SelectionTitle" type="Label" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.9, 0.7, 1)
 text = "LAGEDETAILS"
 
-[node name="Details" type="RichTextLabel" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="Details" type="RichTextLabel" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 220)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
 text = "Kein Objekt ausgewählt."
 
-[node name="RemoveSelected" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="RemoveSelected" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "SYSTEM ENTFERNEN"
 disabled = true
 
-[node name="AutoRelease" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="EditRules" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
-button_pressed = true
-text = "Automatische Freigabe"
+text = "EINSATZREGELN …"
 
-[node name="MinimumClassification" type="OptionButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
-unique_name_in_owner = true
-layout_mode = 2
-tooltip_text = "Niedrigste Klassifikation für automatische Zuweisungen"
-
-[node name="AllowRedundant" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Redundante Einsätze"
-
-[node name="TrackPriority" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="TrackPriority" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 visible = false
 text = "PRIORITÄT: NORMAL"
 
-[node name="AuthorizeTrack" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="AuthorizeTrack" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 visible = false
 text = "TRACK FREIGEBEN"
 
-[node name="BlockTrack" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="BlockTrack" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 visible = false
 text = "TRACK SPERREN"
 
-[node name="ResetTrackRelease" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="ResetTrackRelease" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 visible = false
 text = "FREIGABE ZURÜCKNEHMEN"
 
-[node name="ProtectionPriority" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="ProtectionPriority" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 visible = false
 text = "SCHUTZPRIORITÄT: NORMAL"
 
-[node name="HighContrast" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="HighContrast" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Hoher Kontrast"
 
-[node name="ReducedEffects" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="ReducedEffects" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Reduzierte Effekte"
 
-[node name="AlertsEnabled" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="AlertsEnabled" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 button_pressed = true
 text = "Warntöne"
 
-[node name="SaveGame" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="SaveGame" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "SPIELSTAND SPEICHERN"
 
-[node name="LoadGame" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="LoadGame" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "SPIELSTAND LADEN"
 
-[node name="MainMenu" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="MainMenu" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "ZUM HAUPTMENÜ"
 
-[node name="RestartSame" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="RestartSame" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 visible = false
 text = "ERNEUT – GLEICHER SEED"
 
-[node name="RestartNew" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout"]
+[node name="RestartNew" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 visible = false

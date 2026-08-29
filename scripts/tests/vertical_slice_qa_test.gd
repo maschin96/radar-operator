@@ -42,8 +42,8 @@ func _test_briefing_and_accessibility_controls() -> void:
 	await process_frame
 	_expect(main.get_node("BriefingPanel").visible, "Mission briefing is not visible on first start")
 	var map: Variant = main.get_node("Margin/Layout/Body/TacticalMap")
-	main.get_node("Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout/HighContrast").button_pressed = true
-	main.get_node("Margin/Layout/Body/DetailPanel/DetailMargin/DetailLayout/ReducedEffects").button_pressed = true
+	main.get_node("Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout/HighContrast").button_pressed = true
+	main.get_node("Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout/ReducedEffects").button_pressed = true
 	await process_frame
 	_expect(map.high_contrast and map.reduced_effects, "Accessibility toggles did not reach tactical map")
 	main.queue_free()

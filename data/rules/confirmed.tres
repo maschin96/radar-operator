@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EngagementRuleProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/engagement_rule_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"confirmed"
+display_name = "Nur bestätigte Bedrohungen"
+minimum_classification = &"hostile"
+automatic_release = true
+allow_redundant_engagement = false

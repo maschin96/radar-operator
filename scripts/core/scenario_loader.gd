@@ -88,6 +88,11 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 	for required_id in scenario.mission_goals.get("required_survivors", PackedStringArray()):
 		if not entity_ids.has(StringName(required_id)):
 			errors.append("Mission goal references missing required survivor '%s'" % required_id)
+	if scenario.engagement_profile != null:
+		errors.append_array(scenario.engagement_profile.get_validation_errors())
+		for id in scenario.engagement_profile.infrastructure_priorities:
+			if not entity_ids.has(StringName(id)):
+				errors.append("Regelprofil verweist auf unbekannte Infrastruktur: %s" % id)
 	var wave_ids: Dictionary = {}
 	for resource in scenario.attack_waves:
 		if not resource is AttackWaveDefinition:

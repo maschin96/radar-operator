@@ -19,6 +19,7 @@ func _run() -> void:
 	await _test_catalog_and_layout(main)
 	_test_complete_control_flow(main)
 	_test_track_controls(main)
+	await _test_rule_editor(main)
 	main.queue_free()
 	await process_frame
 
@@ -27,7 +28,7 @@ func _run() -> void:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("GAME SESSION UI TESTS PASSED: 3 test cases")
+	print("GAME SESSION UI TESTS PASSED: 4 test cases")
 	quit(0)
 
 
@@ -80,6 +81,42 @@ func _test_track_controls(main: Variant) -> void:
 	_expect("Klassifikation" in main.get_node("%BuildStatus").text, "UI omitted concrete rejection reason")
 	var event: Dictionary = main.session.events.back()
 	_expect(event.type == &"track_release_rejected" and event.has("simulation_time"), "Rejection lacks timestamped event")
+
+
+func _test_rule_editor(main: Variant) -> void:
+	var rules: Dictionary = main.session.defenses.get_rules()
+	var command_count: int = main.session.player_commands.size()
+	main.session.set_time_scale(2.0)
+	main.get_node("%EditRules").pressed.emit()
+	await process_frame
+	_expect(main.get_node("%Details").size.y >= 220, "Track details collapsed when controls became visible")
+	var editor: EngagementRuleEditor = main.rule_editor
+	_expect(editor.visible and main.session.simulation.get_time_scale() == 0.0, "Rule editor did not open paused")
+	var draft := rules.duplicate(true)
+	draft.display_name = "Eigene Wachregeln"
+	draft.automatic_release = true
+	draft.minimum_classification = "unknown"
+	editor.set_draft(draft)
+	editor.preview_button.pressed.emit()
+	_expect(editor.get_ok_button().disabled and "unsicher" in editor.explanation.text, "Conflicting profile did not explain blocked activation")
+	draft.minimum_classification = "hostile"
+	editor.set_draft(draft)
+	editor.preview_button.pressed.emit()
+	_expect(not editor.get_ok_button().disabled, "Valid draft cannot be activated")
+	_expect(main.session.defenses.get_rules() == rules and main.session.player_commands.size() == command_count, "Preview changed live rules or logged commands")
+	editor.profile_name.text = "Geprüfte Wachregeln"
+	editor.profile_name.text_changed.emit(editor.profile_name.text)
+	_expect(editor.get_ok_button().disabled, "Editing a reviewed draft retained stale approval")
+	editor.preview_button.pressed.emit()
+	editor.get_ok_button().pressed.emit()
+	_expect(main.session.player_commands.size() == command_count + 1, "Apply did not log exactly one command")
+	_expect(main.session.defenses.get_rules().display_name == "Geprüfte Wachregeln", "Named profile not activated")
+	_expect(main.session.simulation.get_time_scale() == 2.0, "Applying profile did not restore speed")
+	main.get_node("%EditRules").pressed.emit()
+	_expect(editor.profile_name.text == "Geprüfte Wachregeln", "Reopening editor lost active profile")
+	editor.canceled.emit()
+	editor.hide()
+	_expect(main.session.simulation.get_time_scale() == 2.0 and main.session.player_commands.size() == command_count + 1, "Discard changed rules or lost speed")
 
 
 func _expect(condition: bool, message: String) -> void:

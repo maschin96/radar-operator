@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EngagementRuleProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/engagement_rule_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"manual"
+display_name = "Manuelle Kontrolle"
+minimum_classification = &"suspicious"
+automatic_release = false
+allow_redundant_engagement = false
