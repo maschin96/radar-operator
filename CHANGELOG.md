@@ -12,8 +12,10 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 - persistentes Einstellungsmodell mit sicheren Defaults und Konfliktprüfung für Tastenbelegungen
 - gemeinsames UI-Theme und dokumentiertes Designsystem für drei Zielauflösungen
 - manuelle Trackpriorität sowie Freigabe, Sperre und Rücknahme über protokollierte Befehle
-- validierte Einsatzregeln und erweiterte Erklärungen der automatischen Zielauswahl
+- drei missionsreferenzierbare Einsatzregelprofile sowie ein sicherer Editor für benannte eigene Profile mit Konfliktprüfung und unverbindlicher Vorschau
+- strukturierte Erklärungen für Zuweisung, Nicht-Zuweisung und Abbruch einschließlich aller Bewertungsanteile und geprüften Trackkandidaten
 - acht zusätzliche automatisierte Testfälle für Katalog, App-Navigation, Profil, Einstellungen und Zielsteuerung
+- neun weitere deterministische Testfälle für Freigabegrenzen, Profilvorschau, Entscheidungserklärungen, UI-Integration und Inhaltsreferenzen
 - Tutorial Mission 1 mit eigener, fehlertoleranter Übungskonfiguration, verständlicherem Automatik-Hinweis und verbindlichem Unbeschädigt-Erfolgstest
 
 ### Behoben
@@ -21,6 +23,10 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 - #6: Laufende Einsätze werden bei Sperre, fehlender Freigabe, Klassifikationsverlust, Reichweitenverlust oder Ausfall ohne Munitionsverbrauch abgebrochen.
 - Manuelle Freigaben prüfen Einsatzgrenzen; Ablehnungen mit Ursache und Zeitstempel bleiben über Save/Load erhalten.
 - Trackdetails erklären Einsatzbereitschaft je System; Kartenbeschriftungen zeigen Priorität und Freigabestatus.
+
+### Migration
+
+- Spielstände verwenden Formatversion 2, da vollständige Regelprofile und abgelehnte Befehle deterministisch rekonstruiert werden. Ältere Formatversionen werden mit einer eindeutigen Meldung abgelehnt; die allgemeine Save-Migration folgt in #18.
 
 ### Geplant
 

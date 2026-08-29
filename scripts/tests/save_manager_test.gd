@@ -39,6 +39,7 @@ func _running_session() -> Variant:
 	session.initialize(scenario)
 	session.place_system(&"sensor_early_warning", Vector2(1500.0, 380.0))
 	session.place_system(&"defense_medium_range", Vector2(1320.0, 520.0))
+	session.set_defense_rules({"profile_id": "save-test", "display_name": "Gespeicherte Wache", "minimum_classification": "hostile"})
 	session.start_mission()
 	for tick in 75:
 		session.advance(0.1)
@@ -48,6 +49,8 @@ func _running_session() -> Variant:
 		session.set_track_priority(tracks[0].id, TrackState.Priority.CRITICAL, "Save fixture")
 		session.set_track_release(tracks[0].id, TrackState.ReleaseStatus.BLOCKED)
 		session.set_track_release(&"missing_track", TrackState.ReleaseStatus.AUTHORIZED)
+		session.set_defense_rules({"display_name": ""})
+		session.set_defense_rules({"automatic_release": false})
 	return session
 
 
@@ -80,6 +83,13 @@ func _test_corrupt_and_incompatible_files_are_rejected(saves: Variant) -> void:
 	file.store_string(JSON.stringify({"format_version": 999}))
 	file.close()
 	_expect(not saves.load_session(CORRUPT_PATH).success, "Incompatible save version was accepted")
+	var old_data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	old_data.format_version = 1
+	file = FileAccess.open(CORRUPT_PATH, FileAccess.WRITE)
+	file.store_string(JSON.stringify(old_data))
+	file.close()
+	var old_result: Dictionary = saves.load_session(CORRUPT_PATH)
+	_expect(not old_result.success and "Unsupported save format version" in str(old_result.errors), "Old saves were not rejected explicitly")
 
 
 func _cleanup() -> void:

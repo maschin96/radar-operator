@@ -22,13 +22,14 @@ func _run() -> void:
 	_test_missing_definition_is_rejected()
 	_test_invalid_definition_values_are_rejected()
 	_test_entity_state_roundtrip()
+	_test_mission_rule_profile()
 
 	if not _failures.is_empty():
 		for failure in _failures:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("SCENARIO DATA TESTS PASSED: 7 test cases")
+	print("SCENARIO DATA TESTS PASSED: 8 test cases")
 	quit(0)
 
 
@@ -119,6 +120,17 @@ func _contains_text(errors: Array[String], text: String) -> bool:
 		if error.contains(text):
 			return true
 	return false
+
+
+func _test_mission_rule_profile() -> void:
+	var scenario: ScenarioDefinition = load(SCENARIO_PATH).duplicate(true)
+	_expect(scenario.engagement_profile != null, "Mission does not reference rule resource")
+	scenario.engagement_profile = load("res://data/rules/manual.tres").duplicate(true)
+	var session := GameSession.new()
+	session.initialize(scenario)
+	_expect(not session.defenses.get_rules().automatic_release, "Mission profile not activated at initialization")
+	scenario.engagement_profile.infrastructure_priorities = {"missing": 2.0}
+	_expect(not ScenarioLoader.new().validate_scenario(scenario).is_empty(), "Missing profile infrastructure not rejected")
 
 
 func _expect(condition: bool, message: String) -> void:

@@ -63,13 +63,22 @@ func set_time_scale(scale: float) -> bool:
 	return simulation.set_time_scale(scale)
 
 
+func preview_defense_rules(rules: Dictionary) -> Dictionary:
+	return defenses.preview_rules(rules, fusion.get_active_tracks())
+
+
 func set_defense_rules(rules: Dictionary) -> Dictionary:
+	_record_player_command(&"set_defense_rules", {"rules": rules.duplicate(true)})
+	if phase == Phase.ENDED:
+		var errors := ["Mission beendet: Einsatzregeln können nicht mehr geändert werden."]
+		_append_event(&"defense_rules_rejected", _simulation_time(), {"errors": errors})
+		return {"success": false, "errors": errors}
 	var result := defenses.set_rules(rules)
 	if not result.success:
 		_append_event(&"defense_rules_rejected", _simulation_time(), {"rules": rules.duplicate(true), "errors": result.errors})
 		return result
-	_record_player_command(&"set_defense_rules", {"rules": rules.duplicate(true)})
 	_append_event(&"defense_rules_changed", _simulation_time(), {"rules": defenses.get_rules()})
+	state_changed.emit()
 	return result
 
 
