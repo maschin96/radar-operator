@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ScenarioDefinition" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="ScenarioDefinition" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/core/scenario_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/tutorial/sensor_tutorial_early_warning.tres" id="2"]
@@ -7,8 +7,11 @@
 [ext_resource type="Resource" path="res://data/infrastructure/infrastructure_power.tres" id="5"]
 [ext_resource type="Resource" path="res://data/scenarios/tutorial_mission_1_wave.tres" id="6"]
 
+[ext_resource type="Resource" path="res://data/rules/standard.tres" id="rules"]
+
 [resource]
 script = ExtResource("1")
+engagement_profile = ExtResource("rules")
 scenario_id = &"tutorial_mission_1"
 display_name = "Tutorial Mission 1 – Erste Wachschicht"
 summary = "Bauen Sie ein erstes Sensornetz auf und schützen Sie ein Kraftwerk vor einem klar erkennbaren Kontakt."

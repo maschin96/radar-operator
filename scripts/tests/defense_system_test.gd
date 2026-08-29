@@ -22,13 +22,19 @@ func _run() -> void:
 	_test_manual_priority_changes_stable_target_order()
 	_test_manual_block_prevents_assignment()
 	_test_invalid_rule_profile_is_rejected()
+	_test_assignment_cancellation()
+	_test_manual_release_limits()
+	_test_profile_preview_is_pure_and_matches_assignment()
+	_test_profile_validation_and_reset()
+	_test_rejected_candidates_and_idle_events()
+	_test_protection_priorities_and_redundancy()
 
 	if not _failures.is_empty():
 		for failure in _failures:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("DEFENSE SYSTEM TESTS PASSED: 8 test cases")
+	print("DEFENSE SYSTEM TESTS PASSED: 14 test cases")
 	quit(0)
 
 
@@ -139,6 +145,115 @@ func _test_invalid_rule_profile_is_rejected() -> void:
 	var result: Dictionary = system.set_rules({"minimum_classification": &"imaginary"})
 	_expect(not result.success, "Invalid minimum classification was accepted")
 	_expect(system.get_rules() == before, "Rejected rule profile partially changed active rules")
+
+
+func _test_assignment_cancellation() -> void:
+	for cause in ["block", "revoke", "classification", "offline", "range"]:
+		var system: Variant = _system([{"id": &"d1", "definition_id": &"defense_short_range", "position": Vector2(500, 500)}])
+		var track: Variant = _track(&"T0001", Vector2(600, 500))
+		system.set_rules({"automatic_release": false})
+		system.authorize_track(track.id)
+		system.process_tick(0.1, 0.1, [track])
+		var defense: DefenseState = system.get_defenses()[0]
+		var ammunition := defense.ammunition
+		match cause:
+			"block": track.release_status = TrackState.ReleaseStatus.BLOCKED
+			"revoke": system.revoke_track_authorization(track.id)
+			"classification": track.classification = &"unknown"
+			"offline": defense.powered = false
+			"range": track.estimated_position = Vector2(1900, 1000)
+		system.process_tick(10.0, 10.1, [track])
+		_expect(defense.assigned_track_id.is_empty(), "Assignment survived " + cause)
+		_expect(defense.ammunition == ammunition, "Cancellation consumed ammunition: " + cause)
+		_expect(defense.last_decision.get("result") == "cancelled", "Cancellation missing decision: " + cause)
+		_expect(system.get_events().back().data.has("reason"), "Cancellation missing reason: " + cause)
+
+
+func _test_manual_release_limits() -> void:
+	var system: Variant = _system([{"id": &"d1", "definition_id": &"defense_short_range", "position": Vector2(500, 500)}])
+	var track: Variant = _track(&"T0001", Vector2(600, 500), &"unknown")
+	_expect(system.get_track_eligibility(track, true)[0].reason == "classification_too_low", "Manual release bypassed classification")
+	track.classification = &"hostile"
+	track.estimated_position = Vector2(1900, 1000)
+	_expect(system.get_track_eligibility(track, true)[0].reason == "out_of_range", "Manual release bypassed range")
+	track.estimated_position = Vector2(600, 500)
+	system.get_defenses()[0].ammunition = 0
+	_expect(system.get_track_eligibility(track, true)[0].reason == "ammunition_empty", "Manual release bypassed ammunition")
+
+
+func _test_profile_preview_is_pure_and_matches_assignment() -> void:
+	var system: Variant = _system([
+		{"id": &"d2", "definition_id": &"defense_medium_range", "position": Vector2(500, 500)},
+		{"id": &"d1", "definition_id": &"defense_medium_range", "position": Vector2(500, 500)},
+	])
+	var first: Variant = _track(&"T0001", Vector2(700, 500))
+	var second: Variant = _track(&"T0002", Vector2(700, 500), &"suspicious")
+	second.priority = TrackState.Priority.CRITICAL
+	var rules: Dictionary = system.get_rules()
+	var events: Array = system.get_events()
+	for classification in ["suspicious", "hostile"]:
+		var draft := rules.duplicate(true)
+		draft.minimum_classification = classification
+		var preview: Dictionary = system.preview_rules(draft, [second, first])
+		_expect(preview.success, "Valid preview rejected")
+		_expect(system.get_rules() == rules and system.get_events() == events, "Preview mutated rules or events")
+		_expect(system.get_defenses()[0].assigned_track_id.is_empty(), "Preview assigned a real system")
+		var expected := "T0002" if classification == "suspicious" else "T0001"
+		_expect(preview.decisions[0].decision.track_id == expected, "Preview ignored minimum classification or priority")
+	var preview: Dictionary = system.preview_rules(rules, [second, first])
+	system.process_tick(0.1, 0.1, [second, first])
+	for index in 2:
+		_expect(system.get_defenses()[index].last_decision == preview.decisions[index].decision, "Preview differs from real deterministic assignment")
+	var stricter := rules.duplicate(true)
+	stricter.minimum_classification = "hostile"
+	var cancellation: Dictionary = system.preview_rules(stricter, [second, first])
+	_expect(cancellation.decisions[0].decision.result == "cancelled", "Preview missed a profile-induced cancellation")
+
+
+func _test_profile_validation_and_reset() -> void:
+	var system: Variant = _system([])
+	var before: Dictionary = system.get_rules()
+	for patch in [{"display_name": " "}, {"automatic_release": "false"}, {"minimum_classification": "unknown"}, {"infrastructure_priorities": {"missing": 1}}, {"infrastructure_priorities": {"power_1": NAN}}, {"infrastructure_priorities": {"power_1": "high"}}]:
+		_expect(not system.set_rules(patch).success, "Malformed/conflicting profile accepted: " + str(patch))
+		_expect(system.get_rules() == before, "Invalid profile partially applied")
+	_expect(not system.preview_rules({"display_name": "Incomplete"}, []).success, "Incomplete preview accepted")
+	system.set_rules({"automatic_release": false})
+	system.configure(_scenario())
+	_expect(system.get_rules().automatic_release, "Reconfigure leaked previous session rules")
+
+
+func _test_rejected_candidates_and_idle_events() -> void:
+	var system: Variant = _system([{"id": &"d1", "definition_id": &"defense_medium_range", "position": Vector2(500, 500)}])
+	var first: Variant = _track(&"T0001", Vector2(700, 500), &"unknown")
+	var second: Variant = _track(&"T0002", Vector2(1900, 1000))
+	system.process_tick(0.1, 0.1, [second, first])
+	var decision: Dictionary = system.get_defenses()[0].last_decision
+	_expect(decision.candidates[0].reason == "classification_too_low", "Declined track lacks classification explanation")
+	_expect(decision.candidates[1].reason == "out_of_range", "Declined track lacks range explanation")
+	_expect(system.get_events().back().type == &"assignment_declined", "Non-assignment event missing")
+	var count: int = system.get_events().size()
+	system.process_tick(0.1, 0.2, [first, second])
+	_expect(system.get_events().size() == count, "Unchanged idle decisions flood event log")
+
+
+func _test_protection_priorities_and_redundancy() -> void:
+	var system: Variant = _system([
+		{"id": &"d1", "definition_id": &"defense_medium_range", "position": Vector2(500, 500)},
+		{"id": &"d2", "definition_id": &"defense_medium_range", "position": Vector2(500, 500)},
+	])
+	var track: Variant = _track(&"T0001", Vector2(700, 500))
+	var rules: Dictionary = system.get_rules()
+	var priorities: Dictionary = {}
+	for entity in LoaderScript.new().instantiate_starting_entities(_scenario()):
+		priorities[String(entity.id)] = 0.0
+	rules.infrastructure_priorities = priorities
+	var zero: Dictionary = system.preview_rules(rules, [track])
+	_expect(is_zero_approx(zero.decisions[0].decision.urgency_score), "Zero protection priority retained protection score")
+	_expect(zero.decisions[1].decision.result == "no_valid_track", "Redundant assignment bypassed disabled rule")
+	rules.allow_redundant_engagement = true
+	var redundant: Dictionary = system.preview_rules(rules, [track])
+	_expect(redundant.decisions[1].decision.result == "assigned", "Redundant profile ignored")
+	_expect(redundant.decisions[1].decision.duplicate_penalty > 0, "Redundant scoring omitted penalty")
 
 
 func _expect(condition: bool, message: String) -> void:

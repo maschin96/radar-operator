@@ -25,5 +25,6 @@ const CURRENT_CONTENT_VERSION := 1
 @export var placement_zones: Array[Rect2] = []
 @export var blocked_zones: Array[Rect2] = []
 @export var energy_connections: Array[Dictionary] = []
+@export var engagement_profile: EngagementRuleProfile
 @export var mission_goals: Dictionary = {}
 @export var tutorial_steps: Array[Dictionary] = []

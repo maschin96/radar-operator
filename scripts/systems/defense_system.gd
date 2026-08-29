@@ -20,12 +20,47 @@ var _events: Array[Dictionary] = []
 var _neutralized_tracks: Dictionary = {}
 var _manual_authorizations: Dictionary = {}
 var _random := RandomNumberGenerator.new()
-var _rules := {
-	"minimum_classification": &"suspicious",
-	"automatic_release": true,
-	"allow_redundant_engagement": false,
-	"infrastructure_priorities": {},
-}
+var _rules: Dictionary = EngagementRuleProfile.new().to_dictionary()
+
+
+static func reason_text(reason: String) -> String:
+	return {
+		"": "Einsatz möglich",
+		"track_not_found": "Track nicht mehr verfügbar",
+		"system_offline": "System nicht einsatzbereit",
+		"ammunition_empty": "Keine Munition",
+		"system_reloading": "System lädt nach",
+		"system_busy": "System verfolgt einen anderen Track",
+		"out_of_range": "Außerhalb der Einsatzreichweite",
+		"classification_too_low": "Klassifikation unter der Mindestanforderung",
+		"track_blocked": "Track manuell gesperrt",
+		"authorization_required": "Manuelle Freigabe fehlt",
+		"redundant_engagement": "Track bereits einem System zugewiesen",
+		"no_eligible_system": "Kein einsatzbereites System vorhanden",
+		"mission_not_running": "Mission läuft nicht",
+		"no_tracks": "Keine aktiven Tracks",
+		"no_eligible_track": "Kein Track erfüllt alle Einsatzregeln",
+		"selected": "Höchste Bewertung, bei Gleichstand stabile Trackreihenfolge",
+		"lower_score_or_stable_tie": "Niedrigere Bewertung oder stabiler Gleichstand",
+		"invalid_priority": "Ungültige Prioritätsstufe",
+		"invalid_release_status": "Ungültiger Freigabestatus",
+	}.get(reason, reason)
+
+
+static func describe_decision(decision: Dictionary) -> String:
+	if decision.is_empty():
+		return "Noch keine Zielentscheidung."
+	var text: String = {"assigned": "Zuweisung", "cancelled": "Abbruch", "maintained": "Zuweisung bleibt bestehen", "no_valid_track": "Keine Zuweisung"}.get(decision.get("result", ""), "Entscheidung") + "\n"
+	if decision.has("rules"):
+		text += "Profil: %s\n" % decision.rules.display_name
+	if decision.has("track_id"):
+		text += "Track: %s\n" % decision.track_id
+	text += reason_text(String(decision.get("reason", "selected")))
+	if decision.has("total_score"):
+		text += "\nBewertung %.1f = Klassifikation %.1f + Schutz %.1f + Erfolg %.1f + Priorität %.1f − Doppelbelegung %.1f" % [decision.total_score, decision.classification_score, decision.urgency_score, decision.success_score, decision.priority_score, decision.duplicate_penalty]
+	for candidate in decision.get("candidates", []):
+		text += "\n%s: %s" % [candidate.track_id, reason_text(candidate.reason)]
+	return text
 
 
 func configure(scenario: ScenarioDefinition, infrastructure: Array = []) -> void:
@@ -36,6 +71,9 @@ func configure(scenario: ScenarioDefinition, infrastructure: Array = []) -> void
 	_neutralized_tracks.clear()
 	_manual_authorizations.clear()
 	_infrastructure = infrastructure.duplicate()
+	_rules = EngagementRuleProfile.new().to_dictionary()
+	if scenario.engagement_profile != null:
+		set_rules(scenario.engagement_profile.to_dictionary())
 	_random.seed = scenario.seed ^ 0xD3F3A5
 	for definition in scenario.definitions:
 		if definition is DefenseDefinition:
@@ -63,23 +101,19 @@ func set_rules(rules: Dictionary) -> Dictionary:
 	var errors := validate_rules(merged)
 	if not errors.is_empty():
 		return {"success": false, "errors": errors}
-	_rules = merged
+	_rules = merged.duplicate(true)
 	return {"success": true, "rules": get_rules()}
 
 
 func validate_rules(rules: Dictionary) -> Array[String]:
-	var errors: Array[String] = []
-	var minimum := StringName(rules.get("minimum_classification", ""))
-	if not CLASSIFICATION_RANK.has(minimum):
-		errors.append("Unbekannte Mindestklassifikation '%s'." % minimum)
-	var priorities: Variant = rules.get("infrastructure_priorities", {})
-	if not priorities is Dictionary:
-		errors.append("Schutzprioritäten müssen als Zuordnung vorliegen.")
-	else:
-		for infrastructure_id in priorities:
-			var priority := float(priorities[infrastructure_id])
-			if priority < 0.0 or priority > 3.0:
-				errors.append("Schutzpriorität für '%s' muss zwischen 0 und 3 liegen." % infrastructure_id)
+	var errors := EngagementRuleProfile.validate_data(rules)
+	if rules.get("infrastructure_priorities") is Dictionary:
+		for id in rules.infrastructure_priorities:
+			var found := false
+			for entity in _infrastructure:
+				found = found or String(entity.id) == String(id)
+			if not found:
+				errors.append("Unbekannte Infrastruktur '%s'." % id)
 	return errors
 
 
@@ -95,6 +129,14 @@ func revoke_track_authorization(track_id: StringName) -> void:
 	_manual_authorizations.erase(track_id)
 
 
+func get_track_eligibility(track: TrackState, manual_release: bool = false) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for defense in get_defenses():
+		var reason := _assignment_rejection(defense, _definitions[defense.definition_id], track, _current_assignment_counts(), manual_release)
+		result.append({"defense_id": String(defense.id), "eligible": reason.is_empty(), "reason": reason})
+	return result
+
+
 func process_tick(delta: float, simulation_time: float, tracks: Array) -> void:
 	var tracks_by_id: Dictionary = {}
 	for track in tracks:
@@ -102,7 +144,7 @@ func process_tick(delta: float, simulation_time: float, tracks: Array) -> void:
 			tracks_by_id[track.id] = track
 	var assigned_counts := _current_assignment_counts()
 	var defense_ids: Array = _defenses.keys()
-	defense_ids.sort()
+	defense_ids.sort_custom(func(a: Variant, b: Variant) -> bool: return String(a) < String(b))
 	for defense_id in defense_ids:
 		var defense := _defenses[defense_id] as DefenseState
 		_update_defense(defense, delta, simulation_time, tracks_by_id, assigned_counts)
@@ -112,7 +154,7 @@ func get_defenses() -> Array[DefenseState]:
 	var result: Array[DefenseState] = []
 	for defense in _defenses.values():
 		result.append(defense)
-	result.sort_custom(func(a: DefenseState, b: DefenseState) -> bool: return a.id < b.id)
+	result.sort_custom(func(a: DefenseState, b: DefenseState) -> bool: return String(a.id) < String(b.id))
 	return result
 
 
@@ -132,6 +174,8 @@ func _update_defense(
 	assigned_counts: Dictionary
 ) -> void:
 	if not defense.active or not defense.operational or not defense.powered:
+		if not defense.assigned_track_id.is_empty():
+			_cancel_assignment(defense, assigned_counts, simulation_time, "system_offline")
 		defense.status = DefenseState.Status.OFFLINE
 		return
 	var definition := _definitions[defense.definition_id] as DefenseDefinition
@@ -144,17 +188,12 @@ func _update_defense(
 				defense.status = DefenseState.Status.READY if defense.ammunition > 0 else DefenseState.Status.DEPLETED
 		DefenseState.Status.TRACKING:
 			if not tracks_by_id.has(defense.assigned_track_id):
-				_record_event(&"assignment_lost", defense, defense.assigned_track_id, simulation_time)
-				_decrement_assignment(assigned_counts, defense.assigned_track_id)
-				defense.assigned_track_id = &""
-				defense.status = DefenseState.Status.READY
+				_cancel_assignment(defense, assigned_counts, simulation_time, "track_not_found")
 				return
 			var track := tracks_by_id[defense.assigned_track_id] as TrackState
-			if not _is_track_in_envelope(defense, definition, track):
-				_record_event(&"assignment_lost", defense, track.id, simulation_time)
-				_decrement_assignment(assigned_counts, track.id)
-				defense.assigned_track_id = &""
-				defense.status = DefenseState.Status.READY
+			var reason := _assignment_rejection(defense, definition, track, assigned_counts)
+			if not reason.is_empty():
+				_cancel_assignment(defense, assigned_counts, simulation_time, reason)
 				return
 			defense.tracking_remaining = maxf(defense.tracking_remaining - delta, 0.0)
 			if defense.tracking_remaining <= 0.0:
@@ -172,60 +211,120 @@ func _assign_best_track(
 	assigned_counts: Dictionary,
 	simulation_time: float
 ) -> void:
-	var best_track: TrackState
-	var best_score := -INF
-	var best_explanation: Dictionary = {}
-	var track_ids: Array = tracks_by_id.keys()
-	track_ids.sort()
-	for track_id in track_ids:
-		var track := tracks_by_id[track_id] as TrackState
-		if not _can_assign(defense, definition, track, assigned_counts):
-			continue
-		var explanation := _score_track(defense, definition, track, int(assigned_counts.get(track.id, 0)))
-		var score := float(explanation.total_score)
-		var is_stable_tie := (
-			best_track != null
-			and is_equal_approx(score, best_score)
-			and String(track.id) < String(best_track.id)
-		)
-		if best_track == null or score > best_score + 0.000001 or is_stable_tie:
-			best_score = score
-			best_track = track
-			best_explanation = explanation
-	if best_track == null:
-		defense.last_decision = {"result": "no_valid_track"}
+	var decision := _evaluate_assignment(defense, definition, tracks_by_id, assigned_counts)
+	var previous := defense.last_decision
+	defense.last_decision = decision
+	if decision.result == "no_valid_track":
+		# Repeated idle ticks must not flood the event log.
+		if previous.get("result") != decision.result or previous.get("candidates") != decision.candidates or previous.get("rules") != decision.rules:
+			_record_event(&"assignment_declined", defense, &"", simulation_time, decision)
 		return
-	defense.assigned_track_id = best_track.id
+	defense.assigned_track_id = StringName(decision.track_id)
 	defense.tracking_remaining = definition.tracking_time
 	defense.status = DefenseState.Status.TRACKING
-	defense.last_decision = best_explanation
-	assigned_counts[best_track.id] = int(assigned_counts.get(best_track.id, 0)) + 1
-	_record_event(&"target_assigned", defense, best_track.id, simulation_time, best_explanation)
-	target_assigned.emit(defense.id, best_track.id)
+	assigned_counts[defense.assigned_track_id] = int(assigned_counts.get(defense.assigned_track_id, 0)) + 1
+	_record_event(&"target_assigned", defense, defense.assigned_track_id, simulation_time, decision)
+	target_assigned.emit(defense.id, defense.assigned_track_id)
 
 
-func _can_assign(
-	defense: DefenseState,
-	definition: DefenseDefinition,
-	track: TrackState,
-	assigned_counts: Dictionary
-) -> bool:
+func _evaluate_assignment(defense: DefenseState, definition: DefenseDefinition, tracks: Dictionary, counts: Dictionary) -> Dictionary:
+	var best: Dictionary = {}
+	var candidates: Array[Dictionary] = []
+	var ids := tracks.keys()
+	ids.sort_custom(func(a: Variant, b: Variant) -> bool: return String(a) < String(b))
+	for id in ids:
+		var track: TrackState = tracks[id]
+		var reason := _assignment_rejection(defense, definition, track, counts)
+		var candidate := {"track_id": String(id), "reason": reason, "eligible": reason.is_empty()}
+		if reason.is_empty():
+			candidate.merge(_score_track(defense, definition, track, int(counts.get(id, 0))))
+			if best.is_empty() or float(candidate.total_score) > float(best.total_score) + 0.000001:
+				best = candidate.duplicate(true)
+		candidates.append(candidate)
+	var decision := best.duplicate(true) if not best.is_empty() else {"result": "no_valid_track", "reason": "no_eligible_track" if not candidates.is_empty() else "no_tracks"}
+	for candidate in candidates:
+		if candidate.eligible:
+			candidate.reason = "selected" if candidate.track_id == best.track_id else "lower_score_or_stable_tie"
+	decision["candidates"] = candidates
+	decision["rules"] = get_rules()
+	return decision
+
+
+func preview_rules(rules: Dictionary, tracks: Array) -> Dictionary:
+	var errors := validate_rules(rules)
+	if not errors.is_empty():
+		return {"success": false, "errors": errors}
+	# Separate evaluator shares read-only inputs, never advances a tick or RNG.
+	var evaluator := DefenseSystem.new()
+	evaluator._rules = rules.duplicate(true)
+	evaluator._infrastructure = _infrastructure
+	evaluator._definitions = _definitions
+	evaluator._infrastructure_definitions = _infrastructure_definitions
+	evaluator._manual_authorizations = _manual_authorizations
+	evaluator._neutralized_tracks = _neutralized_tracks
+	var tracks_by_id: Dictionary = {}
+	for track in tracks:
+		if track.active and not _neutralized_tracks.has(track.id):
+			tracks_by_id[track.id] = track
+	var counts := _current_assignment_counts()
+	var decisions: Array[Dictionary] = []
+	for defense in get_defenses():
+		var decision: Dictionary
+		if defense.status == DefenseState.Status.TRACKING:
+			var track: TrackState = tracks_by_id.get(defense.assigned_track_id)
+			var reason := "track_not_found" if track == null else evaluator._assignment_rejection(defense, _definitions[defense.definition_id], track, counts)
+			decision = {"result": "maintained" if reason.is_empty() else "cancelled", "reason": reason, "track_id": String(defense.assigned_track_id), "rules": rules.duplicate(true)}
+			if not reason.is_empty():
+				_decrement_assignment(counts, defense.assigned_track_id)
+		else:
+			decision = evaluator._evaluate_assignment(defense, _definitions[defense.definition_id], tracks_by_id, counts)
+			if decision.result == "assigned":
+				var id := StringName(decision.track_id)
+				counts[id] = int(counts.get(id, 0)) + 1
+		decisions.append({"defense_id": String(defense.id), "decision": decision})
+	return {"success": true, "decisions": decisions}
+
+
+func _assignment_rejection(
+	defense: DefenseState, definition: DefenseDefinition, track: TrackState,
+	assigned_counts: Dictionary, manual_release: bool = false
+) -> String:
+	if not track.active or _neutralized_tracks.has(track.id):
+		return "track_not_found"
+	if not defense.active or not defense.operational or not defense.powered or defense.status == DefenseState.Status.OFFLINE:
+		return "system_offline"
+	if defense.ammunition <= 0:
+		return "ammunition_empty"
+	if defense.status == DefenseState.Status.RELOADING:
+		return "system_reloading"
+	if defense.status == DefenseState.Status.TRACKING and defense.assigned_track_id != track.id:
+		return "system_busy"
 	if not _is_track_in_envelope(defense, definition, track):
-		return false
+		return "out_of_range"
 	var minimum_rank: int = int(CLASSIFICATION_RANK.get(_rules.minimum_classification, 2))
 	if int(CLASSIFICATION_RANK.get(track.classification, 0)) < minimum_rank:
-		return false
-	if not bool(_rules.automatic_release) and not _manual_authorizations.has(track.id):
-		return false
-	if track.release_status == TrackState.ReleaseStatus.BLOCKED:
-		return false
-	if not bool(_rules.automatic_release) and track.release_status != TrackState.ReleaseStatus.AUTHORIZED and not _manual_authorizations.has(track.id):
-		return false
+		return "classification_too_low"
+	if not manual_release:
+		if track.release_status == TrackState.ReleaseStatus.BLOCKED:
+			return "track_blocked"
+		if not bool(_rules.automatic_release) and not _manual_authorizations.has(track.id):
+			return "authorization_required"
+	# An existing assignment does not compete against itself.
+	if defense.assigned_track_id == track.id:
+		return ""
 	var assignment_count := int(assigned_counts.get(track.id, 0))
 	if assignment_count == 0 or bool(_rules.allow_redundant_engagement):
-		return true
-	var threat_info := _estimate_infrastructure_threat(track)
-	return track.classification == &"hostile" and float(threat_info.time_to_impact) < 5.0
+		return ""
+	return "redundant_engagement"
+
+
+func _cancel_assignment(defense: DefenseState, counts: Dictionary, time: float, reason: String) -> void:
+	defense.last_decision = {"result": "cancelled", "track_id": String(defense.assigned_track_id), "reason": reason, "rules": get_rules()}
+	_record_event(&"assignment_lost", defense, defense.assigned_track_id, time, defense.last_decision)
+	_decrement_assignment(counts, defense.assigned_track_id)
+	defense.assigned_track_id = &""
+	defense.tracking_remaining = 0.0
+	defense.status = DefenseState.Status.READY if defense.ammunition > 0 else DefenseState.Status.DEPLETED
 
 
 func _is_track_in_envelope(defense: DefenseState, definition: DefenseDefinition, track: TrackState) -> bool:

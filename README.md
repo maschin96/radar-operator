@@ -9,7 +9,7 @@
 [![Godot](https://img.shields.io/badge/Godot-4.7.2-478CBF?logo=godot-engine&logoColor=white)](https://godotengine.org/)
 [![Godot CI](https://github.com/maschin96/radar-operator/actions/workflows/ci.yml/badge.svg)](https://github.com/maschin96/radar-operator/actions/workflows/ci.yml)
 ![GDScript](https://img.shields.io/badge/GDScript-statisch_typisiert-355570)
-![Tests](https://img.shields.io/badge/Tests-67_erfolgreich-2ea44f)
+![Tests](https://img.shields.io/badge/Tests-76_erfolgreich-2ea44f)
 ![Status](https://img.shields.io/badge/Status-spielbarer_Prototyp-f0a202)
 [![License: GPL v3+](https://img.shields.io/badge/License-GPL_v3%2B-blue.svg)](LICENSE)
 
@@ -87,6 +87,12 @@ Grün umrandete Flächen sind zulässige Bauzonen, rote Flächen sind gesperrt. 
 | `1`, `2`, `4` | Simulationsgeschwindigkeit |
 | `B` | Briefing ein- oder ausblenden |
 
+## Einsatzregeln und Tracksteuerung
+
+Über **Einsatzregeln …** stehen drei verständlich benannte Vorlagen sowie eigene Regelprofile zur Verfügung. Änderungen werden zuerst geprüft und gegen den pausierten aktuellen Lagezustand als Vorschau angezeigt. Nur **Aktivieren** protokolliert einen Simulationsbefehl und ändert die Regeln; **Verwerfen** lässt die laufende Sitzung unverändert. Das aktive Profil und die Bewertungsanteile jeder automatischen Entscheidung stehen in den System- und Trackdetails.
+
+Einen Track auf der Karte auswählen, dann in den Lagedetails priorisieren, freigeben, sperren oder auf die Standardregeln zurücksetzen. Manuelle Freigaben gelten nur bei ausreichender Klassifikation und mindestens einem verfügbaren System in Reichweite. Die Details nennen konkrete Hindernisse. Eine Sperre bricht laufende Einsätze beim nächsten Simulationstick ab; bei Pause wird keine Munition verbraucht. „Freigabe zurücknehmen“ stellt die aktiven Regeln wieder her: Bei automatischer Freigabe darf das System daher erneut zuweisen.
+
 ## Architektur
 
 Die Darstellung liest ausschließlich Snapshots der Simulation. Spieleraktionen werden über die `GameSession` an klar getrennte Systeme weitergegeben.
@@ -109,7 +115,7 @@ Balancing und Szenarien liegen als textbasierte Godot Resources unter `data/`. D
 
 ## Tests
 
-Die vollständige Suite importiert das Projekt headless und führt 67 deterministische Unit-, Integrations- und End-to-End-Testfälle aus:
+Die vollständige Suite importiert das Projekt headless und führt 76 deterministische Unit-, Integrations- und End-to-End-Testfälle aus:
 
 ```sh
 ./scripts/run_smoke_test.sh
@@ -154,6 +160,7 @@ scripts/tests/       Headless Unit-, Integrations- und End-to-End-Tests
 - [Spiel- und Technikkonzept](docs/radar-operator-konzept.md)
 - [QA, Plattformstatus und bekannte Einschränkungen](docs/qa-und-bekannte-einschraenkungen.md)
 - [UI-Designsystem](docs/ui-designsystem.md)
+- [Einsatzregeln und Entscheidungserklärungen](docs/einsatzregeln.md)
 - [Produktvision v0.5 Public Demo](docs/produktvision-v0.5.md)
 - [Änderungsverlauf](CHANGELOG.md)
 - [Hinweise für Beiträge](CONTRIBUTING.md)

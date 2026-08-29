@@ -23,7 +23,6 @@ const SAVE_PATH := "user://radar_operator_save.json"
 @onready var _remove_button: Button = %RemoveSelected
 @onready var _event_list: ItemList = %EventList
 @onready var _start_button: Button = %StartMission
-@onready var _auto_release: CheckButton = %AutoRelease
 @onready var _restart_same: Button = %RestartSame
 @onready var _restart_new: Button = %RestartNew
 @onready var _save_button: Button = %SaveGame
@@ -46,6 +45,7 @@ var _selected_definition_id: StringName
 var _selected_object_kind: StringName
 var _selected_object_id: StringName
 var _catalog_buttons: Dictionary = {}
+var rule_editor: EngagementRuleEditor
 
 
 func _ready() -> void:
@@ -76,9 +76,7 @@ func _ready() -> void:
 	%Speed2.pressed.connect(_set_time_scale.bind(2.0))
 	%Speed4.pressed.connect(_set_time_scale.bind(4.0))
 	_remove_button.pressed.connect(_remove_selected)
-	_auto_release.toggled.connect(_on_auto_release_toggled)
-	%MinimumClassification.item_selected.connect(_on_minimum_classification_selected)
-	%AllowRedundant.toggled.connect(_on_allow_redundant_toggled)
+	%EditRules.pressed.connect(_open_rule_editor)
 	_restart_same.pressed.connect(restart_mission.bind(true))
 	_restart_new.pressed.connect(restart_mission.bind(false))
 	_save_button.pressed.connect(save_game)
@@ -93,9 +91,10 @@ func _ready() -> void:
 	%AuthorizeTrack.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.AUTHORIZED))
 	%BlockTrack.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.BLOCKED))
 	%ResetTrackRelease.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.DEFAULT))
-	%ProtectionPriority.pressed.connect(_cycle_protection_priority)
+	%ProtectionPriority.pressed.connect(_open_rule_editor)
 	_build_catalog()
-	_setup_rule_editor()
+	rule_editor = EngagementRuleEditor.new()
+	add_child(rule_editor)
 	_refresh_ui()
 	Log.info("Main", "Playable control room initialized")
 
@@ -243,6 +242,8 @@ func _refresh_ui() -> void:
 	if session == null:
 		return
 	var snapshot := session.get_snapshot()
+	%EditRules.disabled = session.phase == GameSession.Phase.ENDED
+	%EditRules.tooltip_text = "Aktives Profil: " + String(session.defenses.get_rules().display_name)
 	_phase_label.text = ["VORBEREITUNG", "EINSATZ", "AUSWERTUNG"][int(snapshot.phase)]
 	_budget_label.text = "BUDGET %04d" % int(snapshot.budget)
 	var total_seconds := int(snapshot.simulation_time)
@@ -292,8 +293,16 @@ func _refresh_details(snapshot: Dictionary) -> void:
 			continue
 		if _selected_object_kind == &"track":
 			_set_track_controls_visible(true)
-			%TrackPriority.text = "PRIORITÄT: %s" % TrackState.Priority.keys()[object.priority]
-			_details.text = "[b]%s[/b]\nKlassifikation: %s\nKonfidenz: %.0f%%\nUnsicherheit: %.1f\nMessungen: %d\nSensoren: %d\nPriorität: %s\nFreigabe: %s\n\nLetzte Fusion:\n%s" % [object.id, object.classification, object.classification_confidence * 100.0, object.uncertainty_radius, object.measurement_count, object.reporting_sensors.size(), TrackState.Priority.keys()[object.priority], TrackState.ReleaseStatus.keys()[object.release_status], str(object.last_update_summary)]
+			%TrackPriority.text = "PRIORITÄT: %s" % ["NORMAL", "HOCH", "KRITISCH"][object.priority]
+			_details.text = "[b]%s[/b]\nKlassifikation: %s\nKonfidenz: %.0f%%\nUnsicherheit: %.1f\nMessungen: %d\nSensoren: %d\nPriorität: %s\nFreigabe: %s\n\nLetzte Fusion:\n%s" % [object.id, object.classification, object.classification_confidence * 100.0, object.uncertainty_radius, object.measurement_count, object.reporting_sensors.size(), ["NORMAL", "HOCH", "KRITISCH"][object.priority], ["Profilregeln", "Freigegeben", "Gesperrt"][object.release_status], str(object.last_update_summary)]
+			_details.text += "\nAktives Profil: " + String(session.defenses.get_rules().display_name)
+			_details.text += "\nBegründung: " + object.priority_reason + "\n\nEinsatzbereitschaft:\n"
+			for candidate in session.defenses.get_track_eligibility(object):
+				_details.text += "%s: %s\n" % [candidate.defense_id, DefenseSystem.reason_text(candidate.reason)]
+			for defense in snapshot.defenses:
+				for candidate in defense.last_decision.get("candidates", []):
+					if candidate.track_id == String(object.id):
+						_details.text += "\n%s: %s" % [defense.id, DefenseSystem.describe_decision(candidate)]
 		elif _selected_object_kind == &"system":
 			var definition := _definition(object.definition_id)
 			var decision: Dictionary = {}
@@ -301,7 +310,8 @@ func _refresh_details(snapshot: Dictionary) -> void:
 				if defense_state.id == object.id:
 					decision = defense_state.last_decision
 					break
-			_details.text = "[b]%s[/b]\nTyp: %s\nPosition: %.0f / %.0f\nReichweite: %.0f\n\nLetzte Zielentscheidung:\n%s" % [object.id, definition.display_name, object.position.x, object.position.y, session.placement.get_definition_range(object.definition_id), str(decision)]
+			_details.text = "[b]%s[/b]\nTyp: %s\nPosition: %.0f / %.0f\nReichweite: %.0f\n\nLetzte Zielentscheidung:\n%s" % [object.id, definition.display_name, object.position.x, object.position.y, session.placement.get_definition_range(object.definition_id), DefenseSystem.describe_decision(decision)]
+			_details.text += "\nAktives Profil: " + String(session.defenses.get_rules().display_name)
 			_remove_button.disabled = session.phase != GameSession.Phase.PREPARATION
 		else:
 			%ProtectionPriority.visible = true
@@ -320,34 +330,9 @@ func _remove_selected() -> void:
 		_refresh_ui()
 
 
-func _on_auto_release_toggled(enabled: bool) -> void:
-	if session != null:
-		var result := session.set_defense_rules({"automatic_release": enabled})
-		if not result.success:
-			_status_label.text = "Regel abgelehnt: " + "; ".join(result.errors)
-
-
-func _setup_rule_editor() -> void:
-	%MinimumClassification.clear()
-	for classification in [&"unknown", &"air_contact", &"suspicious", &"hostile"]:
-		%MinimumClassification.add_item(String(classification).capitalize())
-		%MinimumClassification.set_item_metadata(%MinimumClassification.item_count - 1, classification)
-	%MinimumClassification.select(2)
-
-
-func _on_minimum_classification_selected(index: int) -> void:
-	if session == null:
-		return
-	var classification := StringName(%MinimumClassification.get_item_metadata(index))
-	var result := session.set_defense_rules({"minimum_classification": classification})
-	_status_label.text = "Mindestklassifikation: %s" % classification if result.success else "Regel abgelehnt: " + "; ".join(result.errors)
-
-
-func _on_allow_redundant_toggled(enabled: bool) -> void:
-	if session == null:
-		return
-	var result := session.set_defense_rules({"allow_redundant_engagement": enabled})
-	_status_label.text = "Redundante Einsätze %s." % ("erlaubt" if enabled else "deaktiviert") if result.success else "Regel abgelehnt: " + "; ".join(result.errors)
+func _open_rule_editor() -> void:
+	rule_editor.open_for_session(session)
+	_refresh_ui()
 
 
 func _set_track_controls_visible(visible: bool) -> void:
@@ -372,18 +357,7 @@ func _set_selected_track_release(release_status: int) -> void:
 	if _selected_object_kind != &"track":
 		return
 	var result := session.set_track_release(_selected_object_id, release_status)
-	_status_label.text = "Trackfreigabe geändert." if result.success else "Freigabe abgelehnt: %s" % result.reason
-
-
-func _cycle_protection_priority() -> void:
-	if _selected_object_kind != &"infrastructure":
-		return
-	var priorities: Dictionary = session.defenses.get_rules().infrastructure_priorities.duplicate(true)
-	var current := float(priorities.get(String(_selected_object_id), 1.0))
-	priorities[String(_selected_object_id)] = 1.0 if current >= 3.0 else current + 1.0
-	var result := session.set_defense_rules({"infrastructure_priorities": priorities})
-	_status_label.text = "Schutzpriorität geändert." if result.success else "Regel abgelehnt: " + "; ".join(result.errors)
-	_refresh_ui()
+	_status_label.text = "Trackfreigabe geändert." if result.success else "Freigabe abgelehnt: " + DefenseSystem.reason_text(result.reason)
 
 
 func _on_event_added(event: Dictionary) -> void:
@@ -407,6 +381,13 @@ func _on_event_added(event: Dictionary) -> void:
 
 func _event_label(type: StringName) -> String:
 	return {
+		&"assignment_declined": "KEINE ZUWEISUNG",
+		&"assignment_lost": "EINSATZ ABGEBROCHEN",
+		&"defense_rules_changed": "REGELPROFIL AKTIVIERT",
+		&"defense_rules_rejected": "REGELPROFIL ABGELEHNT",
+		&"track_release_changed": "TRACKFREIGABE GEÄNDERT",
+		&"track_release_rejected": "TRACKFREIGABE ABGELEHNT",
+		&"track_priority_changed": "TRACKPRIORITÄT GEÄNDERT",
 		&"track_created": "KONTAKT ERFASST",
 		&"target_assigned": "ZIEL ZUGEWIESEN",
 		&"engagement_succeeded": "KONTAKT ABGEWEHRT",
