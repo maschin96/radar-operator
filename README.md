@@ -134,10 +134,10 @@ Die gleiche Suite läuft bei Pushes und Pull Requests über GitHub Actions.
 Nach Installation der Godot-4.7.2-Export-Templates:
 
 ```sh
-godot --headless --path . --export-debug "macOS" builds/macos/RadarOperator.zip
-godot --headless --path . --export-debug "Windows" builds/windows/RadarOperator.exe
-godot --headless --path . --export-debug "Linux" builds/linux/RadarOperator.x86_64
+./scripts/export_debug_builds.sh
 ```
+
+Das Skript legt die benötigten Zielordner an und bricht ab, falls ein Artefakt fehlt oder leer ist. Ein abweichender Godot-Pfad kann wie bei der Testsuite über `GODOT_BIN` angegeben werden.
 
 Die Presets erzeugen unsignierte Debug-Builds. Signierung, Notarisierung, Installer und Store-Pakete sind noch nicht Bestandteil des Prototyps.
 

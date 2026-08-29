@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ## [Unveröffentlicht]
 
+### Geplant
+
+- v0.5 Public Demo mit handgefertigter Mini-Kampagne
+- regelbasierte Steuerung mit manueller Trackpriorität und Einsatzfreigabe
+- hochwertige stilisierte 2D-Leitstandpräsentation
+- plattformspezifische Laufzeit-, Eingabe- und Barrierefreiheitstests
+
+## [0.2.0] – 2026-08-29
+
 ### Hinzugefügt
 
 - versionierter, automatisch validierter Szenariokatalog mit Kampagnenmetadaten
@@ -28,18 +37,14 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 - Spielstände verwenden Formatversion 2, da vollständige Regelprofile und abgelehnte Befehle deterministisch rekonstruiert werden. Ältere Formatversionen werden mit einer eindeutigen Meldung abgelehnt; die allgemeine Save-Migration folgt in #18.
 
-### Geplant
-
-- v0.5 Public Demo mit handgefertigter Mini-Kampagne
-- regelbasierte Steuerung mit manueller Trackpriorität und Einsatzfreigabe
-- hochwertige stilisierte 2D-Leitstandpräsentation
-- plattformspezifische Laufzeit-, Eingabe- und Barrierefreiheitstests
-
 ### Geändert
 
 - zukünftige Produktvision und priorisierte Roadmap dokumentiert
 - Produktbacklog in 21 klar abgegrenzte Arbeitspakete strukturiert
 - Repository unter `GPL-3.0-or-later` lizenziert
+- Projekt- und Desktop-Exportversionen auf 0.2.0 vereinheitlicht
+- Desktop-Exports legen ihre Zielordner zuverlässig an und prüfen die erzeugten Artefakte
+- die Testsuite verhindert abweichende Projekt-, Export- und Changelog-Versionen
 
 ## [0.1.0] – 2026-08-26
 
