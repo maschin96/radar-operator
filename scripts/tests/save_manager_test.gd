@@ -51,6 +51,10 @@ func _running_session() -> Variant:
 		session.set_track_release(&"missing_track", TrackState.ReleaseStatus.AUTHORIZED)
 		session.set_defense_rules({"display_name": ""})
 		session.set_defense_rules({"automatic_release": false})
+		var network_result: Dictionary = session.set_network_connection_enabled(&"auto_energy_placed_0001", false)
+		_expect(network_result.success, "Save fixture could not change a network connection")
+		network_result = session.set_network_connection_enabled(&"auto_communication_placed_0002", false)
+		_expect(network_result.success, "Save fixture could not change a communication connection")
 	return session
 
 
@@ -68,10 +72,12 @@ func _test_continuation_is_deterministic(saves: Variant, session: Variant) -> vo
 	if not loaded.success:
 		_failures.append("Could not load for continuation test")
 		return
-	for tick in 20:
+	for tick in 90:
 		session.advance(0.1)
 		loaded.session.advance(0.1)
 	_expect(saves.snapshots_match(loaded.session.get_persistence_snapshot(), session.get_persistence_snapshot()), "Loaded mission diverged during deterministic continuation")
+	_expect(not session.sensors.get_sensors()[0].powered, "Energy outage did not disable connected sensor after reserve expiry")
+	_expect(not session.defenses.get_defenses()[0].operational, "Communication outage did not disable connected defense after reserve expiry")
 
 
 func _test_corrupt_and_incompatible_files_are_rejected(saves: Variant) -> void:
@@ -84,7 +90,7 @@ func _test_corrupt_and_incompatible_files_are_rejected(saves: Variant) -> void:
 	file.close()
 	_expect(not saves.load_session(CORRUPT_PATH).success, "Incompatible save version was accepted")
 	var old_data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	old_data.format_version = 1
+	old_data.format_version = 2
 	file = FileAccess.open(CORRUPT_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(old_data))
 	file.close()

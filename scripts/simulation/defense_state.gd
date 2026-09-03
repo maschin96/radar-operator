@@ -17,6 +17,7 @@ var reload_remaining: float = 0.0
 var powered: bool = true
 var operational: bool = true
 var last_decision: Dictionary = {}
+var network_quality: float = 1.0
 
 
 func _init(

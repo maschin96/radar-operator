@@ -58,7 +58,7 @@ func process_tick(simulation_time: float, threats: Array) -> Array[SensorMeasure
 			created.append_array(_perform_scan(sensor, definition, threats, sensor.next_scan_time))
 			sensor.scan_count += 1
 			scan_completed.emit(sensor.id, sensor.next_scan_time)
-			sensor.next_scan_time += definition.update_interval
+			sensor.next_scan_time += definition.update_interval / maxf(sensor.network_quality, 0.25)
 	return created
 
 
@@ -133,7 +133,8 @@ func _create_measurement(
 	var classification := clampf(
 		definition.classification_strength
 		* (0.4 + threat_definition.signature_strength * 0.6)
-		* (1.0 - distance_ratio * 0.35),
+		* (1.0 - distance_ratio * 0.35)
+		* sensor.network_quality,
 		0.0,
 		1.0
 	)

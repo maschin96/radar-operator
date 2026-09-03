@@ -4,6 +4,17 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ## [Unveröffentlicht]
 
+### Hinzugefügt
+
+- versioniertes Energie- und Kommunikationsgraphmodell mit Online-, Notbetrieb-, Degradiert- und Offline-Zuständen
+- automatische Netzanbindung platzierter Sensor- und Abwehrsysteme mit zeitlich abgestuften Reserve- und Wiederherstellungseffekten
+- schaltbare Kartenebene sowie Quellen-, Reserve- und Ursachenanzeige in den Lagedetails
+- protokollierte Netzereignisse und deterministische Save-/Load- sowie Replay-Abdeckung
+
+### Migration
+
+- Spielstände verwenden Formatversion 3, da Netzzustände und Netzbefehle deterministisch rekonstruiert werden. Ältere Spielstände werden bis zur allgemeinen Migration in #18 eindeutig abgelehnt.
+
 ### Geplant
 
 - v0.5 Public Demo mit handgefertigter Mini-Kampagne

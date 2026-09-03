@@ -2,6 +2,7 @@ class_name ScenarioDefinition
 extends Resource
 
 const CURRENT_CONTENT_VERSION := 1
+const CURRENT_NETWORK_MODEL_VERSION := 1
 
 @export_group("Catalog Metadata")
 @export var content_version: int = CURRENT_CONTENT_VERSION
@@ -25,6 +26,15 @@ const CURRENT_CONTENT_VERSION := 1
 @export var placement_zones: Array[Rect2] = []
 @export var blocked_zones: Array[Rect2] = []
 @export var energy_connections: Array[Dictionary] = []
+@export_group("Network")
+@export var network_model_version: int = CURRENT_NETWORK_MODEL_VERSION
+@export var network_connections: Array[Dictionary] = []
+@export var network_defaults: Dictionary = {
+	"system_power_reserve": 8.0,
+	"system_communication_reserve": 5.0,
+	"degraded_fraction": 0.5,
+	"recovery_duration": 2.0,
+}
 @export var engagement_profile: EngagementRuleProfile
 @export var mission_goals: Dictionary = {}
 @export var tutorial_steps: Array[Dictionary] = []

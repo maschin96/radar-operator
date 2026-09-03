@@ -142,7 +142,23 @@ func replay_player_command(command: Dictionary) -> Dictionary:
 			return set_track_release(StringName(command.data.track_id), int(command.data.release_status))
 		&"set_defense_rules":
 			return set_defense_rules(command.data.rules)
+		&"set_network_connection_enabled":
+			return set_network_connection_enabled(StringName(command.data.connection_id), bool(command.data.enabled))
 	return {"success": false, "reason": "unknown_command"}
+
+
+func set_network_connection_enabled(connection_id: StringName, enabled: bool) -> Dictionary:
+	_record_player_command(&"set_network_connection_enabled", {
+		"connection_id": String(connection_id),
+		"enabled": enabled,
+	})
+	if phase == Phase.ENDED:
+		return {"success": false, "connection_id": connection_id, "reason": "mission_ended"}
+	var result := infrastructure.set_connection_enabled(connection_id, enabled, _simulation_time())
+	if result.success:
+		_collect_events(_simulation_time())
+		state_changed.emit()
+	return result
 
 
 func place_system(definition_id: StringName, position: Vector2) -> Dictionary:
@@ -182,6 +198,8 @@ func start_mission() -> Dictionary:
 			defense_count += 1
 	if sensor_count == 0 or defense_count == 0:
 		return {"success": false, "reason": "requires_sensor_and_defense"}
+	infrastructure.register_systems(placement.get_placements())
+	_apply_network_to_systems()
 	placement.start_deployment()
 	infrastructure.start_mission()
 	phase = Phase.RUNNING
@@ -202,6 +220,7 @@ func get_snapshot() -> Dictionary:
 		"infrastructure": infrastructure.get_infrastructure(),
 		"tracks": fusion.get_active_tracks(),
 		"defenses": defenses.get_defenses(),
+		"network_connections": infrastructure.get_network_connections(),
 		"mission_status": infrastructure.get_mission_status(),
 		"events": events,
 	}
@@ -233,6 +252,8 @@ func get_persistence_snapshot() -> Dictionary:
 			"next_scan_time": sensor.next_scan_time,
 			"scan_count": sensor.scan_count,
 			"powered": sensor.powered,
+			"operational": sensor.operational,
+			"network_quality": sensor.network_quality,
 		})
 	var defense_data: Array[Dictionary] = []
 	for defense in defenses.get_defenses():
@@ -243,6 +264,9 @@ func get_persistence_snapshot() -> Dictionary:
 			"assigned_track_id": str(defense.assigned_track_id),
 			"tracking_remaining": defense.tracking_remaining,
 			"reload_remaining": defense.reload_remaining,
+			"powered": defense.powered,
+			"operational": defense.operational,
+			"network_quality": defense.network_quality,
 		})
 	var simulation_data := simulation.get_snapshot()
 	return {
@@ -257,6 +281,7 @@ func get_persistence_snapshot() -> Dictionary:
 		"threats": threat_data,
 		"sensors": sensor_data,
 		"defenses": defense_data,
+		"network_connections": infrastructure.get_network_persistence_state(),
 		"defense_rules": defenses.get_rules(),
 		"player_commands": player_commands.duplicate(true),
 		"mission_status": infrastructure.get_mission_status(),
@@ -267,10 +292,11 @@ func get_persistence_snapshot() -> Dictionary:
 func _on_simulation_tick(_tick: int) -> void:
 	var simulation_time: float = simulation.get_snapshot().simulation_time
 	movement.process_tick(TICK_DURATION, simulation_time)
+	infrastructure.process_tick(TICK_DURATION, simulation_time)
+	_apply_network_to_systems()
 	var measurements := sensors.process_tick(simulation_time, movement.get_debug_threat_states())
 	fusion.process_measurements(measurements, simulation_time)
 	defenses.process_tick(TICK_DURATION, simulation_time, fusion.get_active_tracks())
-	infrastructure.process_tick(TICK_DURATION, simulation_time)
 	_collect_events(simulation_time)
 	_record_replay_frame(simulation_time)
 	state_changed.emit()
@@ -371,6 +397,7 @@ func _record_replay_frame(simulation_time: float) -> void:
 		"simulation_time": simulation_time,
 		"tracks": track_data,
 		"infrastructure": infrastructure_data,
+		"network_connections": infrastructure.get_network_connections(),
 	})
 	_next_replay_time = floorf(simulation_time) + 1.0
 
@@ -380,3 +407,24 @@ func _definition(definition_id: StringName) -> EntityDefinition:
 		if definition is EntityDefinition and definition.id == definition_id:
 			return definition
 	return null
+
+
+func _apply_network_to_systems() -> void:
+	for sensor in sensors.get_sensors():
+		var state := infrastructure.get_network_state(sensor.id)
+		if state.is_empty():
+			continue
+		sensor.powered = int(state.energy_status) != InfrastructureState.NetworkStatus.OFFLINE
+		sensor.operational = int(state.communication_status) != InfrastructureState.NetworkStatus.OFFLINE
+		sensor.network_quality = minf(_network_quality(int(state.energy_status)), _network_quality(int(state.communication_status)))
+	for defense in defenses.get_defenses():
+		var state := infrastructure.get_network_state(defense.id)
+		if state.is_empty():
+			continue
+		defense.powered = int(state.energy_status) != InfrastructureState.NetworkStatus.OFFLINE
+		defense.operational = int(state.communication_status) != InfrastructureState.NetworkStatus.OFFLINE
+		defense.network_quality = minf(_network_quality(int(state.energy_status)), _network_quality(int(state.communication_status)))
+
+
+func _network_quality(status: int) -> float:
+	return [1.0, 0.85, 0.5, 0.0][clampi(status, 0, InfrastructureState.NetworkStatus.size() - 1)]

@@ -195,7 +195,7 @@ func _update_defense(
 			if not reason.is_empty():
 				_cancel_assignment(defense, assigned_counts, simulation_time, reason)
 				return
-			defense.tracking_remaining = maxf(defense.tracking_remaining - delta, 0.0)
+			defense.tracking_remaining = maxf(defense.tracking_remaining - delta * defense.network_quality, 0.0)
 			if defense.tracking_remaining <= 0.0:
 				_resolve_engagement(defense, definition, track, simulation_time, assigned_counts)
 		DefenseState.Status.READY:
@@ -386,7 +386,7 @@ func _estimate_infrastructure_threat(track: TrackState) -> Dictionary:
 
 func _success_chance(defense: DefenseState, definition: DefenseDefinition, track: TrackState) -> float:
 	var uncertainty_penalty := clampf(track.uncertainty_radius / definition.engagement_range, 0.0, 1.0) * 0.25
-	return clampf(definition.base_success_chance - uncertainty_penalty, 0.05, 0.95)
+	return clampf((definition.base_success_chance - uncertainty_penalty) * defense.network_quality, 0.05, 0.95)
 
 
 func _resolve_engagement(

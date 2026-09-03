@@ -14,6 +14,8 @@ func _initialize() -> void:
 func _run() -> void:
 	_test_only_valid_target_events_apply_damage_once()
 	_test_power_dependency_uses_reserve_time()
+	_test_network_transitions_and_recovery_are_explained()
+	_test_runtime_systems_receive_energy_and_communication()
 	_test_required_target_loss_causes_defeat_once()
 	_test_duration_with_goals_causes_victory()
 	_test_simultaneous_terminal_events_freeze_state()
@@ -23,7 +25,7 @@ func _run() -> void:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("INFRASTRUCTURE SYSTEM TESTS PASSED: 5 test cases")
+	print("INFRASTRUCTURE SYSTEM TESTS PASSED: 7 test cases")
 	quit(0)
 
 
@@ -66,6 +68,43 @@ func _test_power_dependency_uses_reserve_time() -> void:
 	_expect(system.get_state(&"east_factory").powered, "Factory lost power before reserve expired")
 	system.process_tick(0.2, 6.1)
 	_expect(not system.get_state(&"east_factory").powered, "Factory retained power after reserve expired")
+
+
+func _test_network_transitions_and_recovery_are_explained() -> void:
+	var system: Variant = _system()
+	var disabled: Dictionary = system.set_connection_enabled(&"energy_power_factory", false, 1.0)
+	_expect(disabled.success, "Known network connection could not be disabled")
+	system.process_tick(2.6, 3.6)
+	var state: Dictionary = system.get_network_state(&"east_factory")
+	_expect(int(state.energy_status) == InfrastructureState.NetworkStatus.DEGRADED, "Reserve did not transition to degraded state")
+	_expect(String(state.causes.energy) == "connection_disabled", "Network outage cause was not exposed")
+	system.process_tick(2.5, 6.1)
+	state = system.get_network_state(&"east_factory")
+	_expect(int(state.energy_status) == InfrastructureState.NetworkStatus.OFFLINE, "Exhausted reserve did not transition offline")
+	_expect(not system.get_state(&"east_factory").powered, "Offline energy connection did not depower consumer")
+	var restored: Dictionary = system.set_connection_enabled(&"energy_power_factory", true, 6.1)
+	_expect(restored.success, "Known network connection could not be restored")
+	system.process_tick(0.1, 6.2)
+	state = system.get_network_state(&"east_factory")
+	_expect(int(state.energy_status) == InfrastructureState.NetworkStatus.DEGRADED, "Recovery transition was skipped")
+	_expect(String(state.causes.energy) == "recovering", "Recovery cause was not exposed")
+	system.process_tick(2.0, 8.2)
+	_expect(int(system.get_network_state(&"east_factory").energy_status) == InfrastructureState.NetworkStatus.ONLINE, "Recovered connection did not return online")
+	_expect(_count_events(system.get_events(), &"network_state_changed") >= 3, "Network transitions were not fully recorded")
+
+
+func _test_runtime_systems_receive_energy_and_communication() -> void:
+	var system: Variant = _system()
+	var sensor := EntityState.new(&"field_sensor", &"sensor_early_warning", &"player", Vector2(900.0, 500.0))
+	system.register_systems([sensor])
+	var state: Dictionary = system.get_network_state(&"field_sensor")
+	_expect(String(state.sources.energy) == "north_power", "Runtime system was not linked to the power source")
+	_expect(String(state.sources.communication) == "capital_command", "Runtime system was not linked to the communication source")
+	system.set_connection_enabled(&"auto_communication_field_sensor", false, 1.0)
+	system.process_tick(5.1, 6.1)
+	state = system.get_network_state(&"field_sensor")
+	_expect(int(state.communication_status) == InfrastructureState.NetworkStatus.OFFLINE, "Communication reserve did not affect runtime system")
+	_expect(int(state.energy_status) == InfrastructureState.NetworkStatus.ONLINE, "Communication outage incorrectly disabled energy")
 
 
 func _test_required_target_loss_causes_defeat_once() -> void:
