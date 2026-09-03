@@ -12,6 +12,7 @@ const TRACK_STALE_TIMEOUT := 12.0
 const TIME_EPSILON := 0.000000001
 
 var _tracks: Dictionary = {}
+var _sorted_track_ids: Array[StringName] = []
 var _next_track_number: int = 1
 var _last_process_time: float = 0.0
 var _event_time: float = 0.0
@@ -20,6 +21,7 @@ var _events: Array[Dictionary] = []
 
 func reset() -> void:
 	_tracks.clear()
+	_sorted_track_ids.clear()
 	_next_track_number = 1
 	_last_process_time = 0.0
 	_events.clear()
@@ -59,9 +61,7 @@ func process_measurements(measurements: Array, current_time: float) -> Array[Dic
 
 func get_active_tracks() -> Array[TrackState]:
 	var result: Array[TrackState] = []
-	var ids: Array = _tracks.keys()
-	ids.sort()
-	for track_id in ids:
+	for track_id in _sorted_track_ids:
 		result.append(_tracks[track_id])
 	return result
 
@@ -81,6 +81,7 @@ func remove_track(track_id: StringName, current_time: float, reason: StringName 
 	var track := _tracks[track_id] as TrackState
 	track.active = false
 	_tracks.erase(track_id)
+	_sorted_track_ids.erase(track_id)
 	track.last_update_summary = {"result": String(reason)}
 	_record_event(&"track_lost", track)
 	track_lost.emit(track_id)
@@ -99,21 +100,19 @@ func _predict_tracks(current_time: float) -> void:
 
 func _find_best_track(measurement: SensorMeasurement, accepted_scan_keys: Dictionary) -> TrackState:
 	var best_track: TrackState
-	var best_distance := INF
+	var best_distance_squared := INF
 	var scan_key := _measurement_scan_key(measurement)
-	var ids: Array = _tracks.keys()
-	ids.sort()
-	for track_id in ids:
+	for track_id in _sorted_track_ids:
 		var track := _tracks[track_id] as TrackState
 		if accepted_scan_keys.has(track.id) and accepted_scan_keys[track.id].has(scan_key):
 			continue
-		var distance := track.estimated_position.distance_to(measurement.measured_position)
+		var distance_squared := track.estimated_position.distance_squared_to(measurement.measured_position)
 		var association_gate := maxf(
 			MINIMUM_ASSOCIATION_GATE,
 			track.uncertainty_radius + measurement.position_error_radius
 		)
-		if distance <= association_gate and distance < best_distance:
-			best_distance = distance
+		if distance_squared <= association_gate * association_gate and distance_squared < best_distance_squared:
+			best_distance_squared = distance_squared
 			best_track = track
 	return best_track
 
@@ -141,6 +140,8 @@ func _create_track(measurement: SensorMeasurement) -> TrackState:
 		"result": "created",
 	}
 	_tracks[track.id] = track
+	_sorted_track_ids.append(track.id)
+	_sorted_track_ids.sort()
 	_record_event(&"track_created", track)
 	track_created.emit(track)
 	return track
@@ -194,6 +195,7 @@ func _remove_stale_tracks(current_time: float) -> void:
 		var track := _tracks[track_id] as TrackState
 		track.active = false
 		_tracks.erase(track_id)
+		_sorted_track_ids.erase(track_id)
 		_record_event(&"track_lost", track)
 		track_lost.emit(track_id)
 

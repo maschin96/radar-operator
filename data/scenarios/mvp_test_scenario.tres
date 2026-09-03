@@ -51,14 +51,30 @@ starting_entities = Array[Dictionary]([{
 attack_waves = Array[Resource]([ExtResource("13")])
 placement_zones = Array[Rect2]([Rect2(80, 80, 1840, 1040)])
 blocked_zones = Array[Rect2]([Rect2(940, 550, 120, 120), Rect2(470, 340, 100, 100), Rect2(1460, 740, 100, 100)])
-energy_connections = Array[Dictionary]([{
+network_connections = Array[Dictionary]([{
 "consumer_id": &"capital_command",
+"id": &"energy_power_command",
+"kind": &"energy",
 "reserve_duration": 10.0,
 "source_id": &"north_power"
 }, {
 "consumer_id": &"east_factory",
+"id": &"energy_power_factory",
+"kind": &"energy",
 "reserve_duration": 5.0,
 "source_id": &"north_power"
+}, {
+"consumer_id": &"north_power",
+"id": &"communication_command_power",
+"kind": &"communication",
+"reserve_duration": 6.0,
+"source_id": &"capital_command"
+}, {
+"consumer_id": &"east_factory",
+"id": &"communication_command_factory",
+"kind": &"communication",
+"reserve_duration": 4.0,
+"source_id": &"capital_command"
 }])
 mission_goals = {
 "minimum_survivors": 2,

@@ -17,6 +17,7 @@ const LAYER_INFRASTRUCTURE := &"infrastructure"
 const LAYER_SYSTEMS := &"systems"
 const LAYER_TRACKS := &"tracks"
 const LAYER_RANGES := &"ranges"
+const LAYER_NETWORK := &"network"
 const LAYER_SELECTION := &"selection"
 
 @export var world_size := Vector2(2000.0, 1200.0):
@@ -31,6 +32,7 @@ var _is_panning := false
 var _infrastructure_states: Array = []
 var _placement_states: Array = []
 var _track_states: Array = []
+var _network_connections: Array = []
 var _placement_zones: Array[Rect2] = []
 var _blocked_zones: Array[Rect2] = []
 var _preview_position := Vector2.ZERO
@@ -47,6 +49,7 @@ var _layers: Dictionary = {
 	LAYER_SYSTEMS: true,
 	LAYER_TRACKS: true,
 	LAYER_RANGES: true,
+	LAYER_NETWORK: true,
 	LAYER_SELECTION: true,
 }
 
@@ -142,10 +145,11 @@ func get_debug_text() -> String:
 	]
 
 
-func set_world_state(infrastructure_states: Array, placement_states: Array, track_states: Array) -> void:
+func set_world_state(infrastructure_states: Array, placement_states: Array, track_states: Array, network_connections: Array = []) -> void:
 	_infrastructure_states = infrastructure_states
 	_placement_states = placement_states
 	_track_states = track_states
+	_network_connections = network_connections
 	queue_redraw()
 
 
@@ -188,6 +192,8 @@ func _draw() -> void:
 		_draw_terrain()
 	if is_layer_visible(LAYER_RANGES):
 		_draw_ranges()
+	if is_layer_visible(LAYER_NETWORK):
+		_draw_network()
 	if is_layer_visible(LAYER_INFRASTRUCTURE):
 		_draw_infrastructure()
 	if is_layer_visible(LAYER_SYSTEMS):
@@ -235,18 +241,48 @@ func _draw_ranges() -> void:
 		draw_arc(center, _preview_range * zoom_level, 0.0, TAU, 80, Color(color, 0.65), 1.5)
 
 
+func _draw_network() -> void:
+	for connection in _network_connections:
+		var from := world_to_screen(connection.source_position)
+		var to := world_to_screen(connection.consumer_position)
+		var status := int(connection.status)
+		var color := Color("efb94c") if StringName(connection.kind) == &"energy" else Color("59c9e8")
+		if status == InfrastructureState.NetworkStatus.RESERVE:
+			color = Color("f1d06a")
+		elif status == InfrastructureState.NetworkStatus.DEGRADED:
+			color = Color("f08c46")
+		elif status == InfrastructureState.NetworkStatus.OFFLINE:
+			color = Color("e2534a")
+		if not bool(connection.enabled):
+			color.a = 0.45
+		draw_dashed_line(from, to, color, 2.0, 8.0) if status == InfrastructureState.NetworkStatus.OFFLINE else draw_line(from, to, color, 2.0)
+
+
 func _draw_infrastructure() -> void:
 	for state in _infrastructure_states:
 		var color := Color("f0c86a") if state.active else Color("77463f")
+		if state.active and (state.energy_status == InfrastructureState.NetworkStatus.OFFLINE or state.communication_status == InfrastructureState.NetworkStatus.OFFLINE):
+			color = Color("e2534a")
+		elif state.active and (state.energy_status == InfrastructureState.NetworkStatus.DEGRADED or state.communication_status == InfrastructureState.NetworkStatus.DEGRADED):
+			color = Color("f08c46")
 		_draw_diamond(world_to_screen(state.position), 10.0, color)
 
 
 func _draw_systems() -> void:
 	for state in _placement_states:
 		var position: Vector2 = world_to_screen(state.position)
-		draw_circle(position, 7.0, Color("72e2a5"))
-		draw_line(position + Vector2(-11.0, 0.0), position + Vector2(11.0, 0.0), Color("72e2a5"), 1.0)
-		draw_line(position + Vector2(0.0, -11.0), position + Vector2(0.0, 11.0), Color("72e2a5"), 1.0)
+		var color := _system_network_color(state.id)
+		draw_circle(position, 7.0, color)
+		draw_line(position + Vector2(-11.0, 0.0), position + Vector2(11.0, 0.0), color, 1.0)
+		draw_line(position + Vector2(0.0, -11.0), position + Vector2(0.0, 11.0), color, 1.0)
+
+
+func _system_network_color(entity_id: StringName) -> Color:
+	var worst_status := InfrastructureState.NetworkStatus.ONLINE
+	for connection in _network_connections:
+		if StringName(connection.consumer_id) == entity_id:
+			worst_status = maxi(worst_status, int(connection.status))
+	return [Color("72e2a5"), Color("f1d06a"), Color("f08c46"), Color("e2534a")][worst_status]
 
 
 func _draw_tracks() -> void:

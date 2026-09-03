@@ -33,7 +33,7 @@ Alle Staaten, Systeme, Signaturen und Leistungswerte sind fiktiv. Das Projekt bi
 - Sensorerfassung, Messfehler, Track-Fusion und Klassifikationskonfidenz
 - automatische Zielpriorisierung, Munitions- und Abwehrzustände
 - manuelle Trackpriorität sowie protokollierte Freigabe, Sperre und Rücknahme
-- kritische Infrastruktur, Energieabhängigkeiten und Missionsziele
+- kritische Infrastruktur sowie versionierte Energie- und Kommunikationsnetze mit Notbetrieb
 - Ereignisprotokoll, Missionsauswertung und Replay-Daten
 - deterministisches Speichern und Laden
 - Kontrastmodus, reduzierte Effekte und deaktivierbare Warntöne
@@ -115,7 +115,7 @@ Balancing und Szenarien liegen als textbasierte Godot Resources unter `data/`. D
 
 ## Tests
 
-Die vollständige Suite importiert das Projekt headless und führt 76 deterministische Unit-, Integrations- und End-to-End-Testfälle aus:
+Die vollständige Suite importiert das Projekt headless und führt 79 deterministische Unit-, Integrations- und End-to-End-Testfälle aus:
 
 ```sh
 ./scripts/run_smoke_test.sh
@@ -161,6 +161,7 @@ scripts/tests/       Headless Unit-, Integrations- und End-to-End-Tests
 - [QA, Plattformstatus und bekannte Einschränkungen](docs/qa-und-bekannte-einschraenkungen.md)
 - [UI-Designsystem](docs/ui-designsystem.md)
 - [Einsatzregeln und Entscheidungserklärungen](docs/einsatzregeln.md)
+- [Energie- und Kommunikationsnetz](docs/energie-und-kommunikationsnetz.md)
 - [Produktvision v0.5 Public Demo](docs/produktvision-v0.5.md)
 - [Änderungsverlauf](CHANGELOG.md)
 - [Hinweise für Beiträge](CONTRIBUTING.md)

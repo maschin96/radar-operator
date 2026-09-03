@@ -85,6 +85,7 @@ func _ready() -> void:
 	%TutorialSkip.pressed.connect(_skip_tutorial)
 	%HighContrast.toggled.connect(_on_accessibility_changed)
 	%ReducedEffects.toggled.connect(_on_accessibility_changed)
+	%NetworkLayer.toggled.connect(func(visible: bool) -> void: _map.set_layer_visible(TacticalMap.LAYER_NETWORK, visible))
 	%AlertsEnabled.toggled.connect(func(enabled: bool) -> void: _audio.alerts_enabled = enabled)
 	%MainMenu.pressed.connect(func() -> void: request_main_menu.emit())
 	%TrackPriority.pressed.connect(_cycle_track_priority)
@@ -251,7 +252,7 @@ func _refresh_ui() -> void:
 	_start_button.disabled = snapshot.phase != GameSession.Phase.PREPARATION
 	for button in _catalog_buttons.values():
 		button.disabled = snapshot.phase != GameSession.Phase.PREPARATION
-	_map.set_world_state(snapshot.infrastructure, snapshot.placements, snapshot.tracks)
+	_map.set_world_state(snapshot.infrastructure, snapshot.placements, snapshot.tracks, snapshot.network_connections)
 	_refresh_details(snapshot)
 	_update_tutorial_from_snapshot(snapshot)
 
@@ -311,16 +312,46 @@ func _refresh_details(snapshot: Dictionary) -> void:
 					decision = defense_state.last_decision
 					break
 			_details.text = "[b]%s[/b]\nTyp: %s\nPosition: %.0f / %.0f\nReichweite: %.0f\n\nLetzte Zielentscheidung:\n%s" % [object.id, definition.display_name, object.position.x, object.position.y, session.placement.get_definition_range(object.definition_id), DefenseSystem.describe_decision(decision)]
+			_details.text += "\n\n" + _network_detail(session.infrastructure.get_network_state(object.id))
 			_details.text += "\nAktives Profil: " + String(session.defenses.get_rules().display_name)
 			_remove_button.disabled = session.phase != GameSession.Phase.PREPARATION
 		else:
 			%ProtectionPriority.visible = true
 			var priority := float((session.defenses.get_rules().infrastructure_priorities as Dictionary).get(String(object.id), 1.0))
 			%ProtectionPriority.text = "SCHUTZPRIORITÄT: %.0f" % priority
-			_details.text = "[b]%s[/b]\nIntegrität: %.0f / %.0f\nEnergie: %s\nStatus: %s\nSchutzpriorität: %.0f" % [object.id, object.integrity, object.maximum_integrity, "ONLINE" if object.powered else "AUS", InfrastructureState.Status.keys()[object.status], priority]
+			_details.text = "[b]%s[/b]\nIntegrität: %.0f / %.0f\nStatus: %s\nSchutzpriorität: %.0f\n\n%s" % [object.id, object.integrity, object.maximum_integrity, InfrastructureState.Status.keys()[object.status], priority, _network_detail(session.infrastructure.get_network_state(object.id))]
 		return
 	_selected_object_id = &""
 	_details.text = "Objekt nicht mehr verfügbar."
+
+
+func _network_detail(state: Dictionary) -> String:
+	if state.is_empty():
+		return "NETZ: nicht angebunden"
+	var names := ["ONLINE", "NOTBETRIEB", "DEGRADIERT", "OFFLINE"]
+	var energy := int(state.energy_status)
+	var communication := int(state.communication_status)
+	var energy_cause := String(state.causes.get("energy", ""))
+	var communication_cause := String(state.causes.get("communication", ""))
+	return "NETZSTATUS\nEnergie: %s · Reserve %.1fs\nQuelle: %s%s\nKommunikation: %s · Reserve %.1fs\nQuelle: %s%s" % [
+		names[energy], float(state.reserves.get("energy", 0.0)), _network_source_label(String(state.sources.get("energy", ""))), _network_cause_label(energy_cause),
+		names[communication], float(state.reserves.get("communication", 0.0)), _network_source_label(String(state.sources.get("communication", ""))), _network_cause_label(communication_cause),
+	]
+
+
+func _network_source_label(source: String) -> String:
+	return "Direktversorgung" if source.is_empty() else source
+
+
+func _network_cause_label(cause: String) -> String:
+	if cause.is_empty():
+		return ""
+	return " · " + {
+		"connection_disabled": "Verbindung unterbrochen",
+		"source_unavailable": "Quelle ausgefallen",
+		"recovering": "Wiederanlauf läuft",
+		"no_connection": "keine Verbindung",
+	}.get(cause, cause)
 
 
 func _remove_selected() -> void:
@@ -394,6 +425,9 @@ func _event_label(type: StringName) -> String:
 		&"engagement_failed": "ABWEHR FEHLGESCHLAGEN",
 		&"threat_target_reached": "ZIEL GETROFFEN",
 		&"mission_ended": "MISSION BEENDET",
+		&"network_connection_changed": "NETZVERBINDUNG GEÄNDERT",
+		&"network_state_changed": "NETZZUSTAND GEÄNDERT",
+		&"power_state_changed": "ENERGIESTATUS GEÄNDERT",
 	}.get(type, String(type).to_upper())
 
 

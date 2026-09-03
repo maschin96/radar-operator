@@ -50,6 +50,8 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		errors.append("Scenario budget cannot be negative")
 	if scenario.mission_duration <= 0.0:
 		errors.append("Scenario duration must be positive")
+	if scenario.network_model_version != ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION:
+		errors.append("Network model version %d is incompatible; supported version is %d" % [scenario.network_model_version, ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION])
 	for zone in scenario.placement_zones:
 		if zone.size.x <= 0.0 or zone.size.y <= 0.0:
 			errors.append("Scenario contains an empty placement zone")
@@ -85,6 +87,7 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 			errors.append("Energy connection references missing consumer '%s'" % consumer_id)
 		if float(connection.get("reserve_duration", 0.0)) < 0.0:
 			errors.append("Energy connection for '%s' has negative reserve duration" % consumer_id)
+	_validate_network_connections(scenario, entity_ids, errors)
 	for required_id in scenario.mission_goals.get("required_survivors", PackedStringArray()):
 		if not entity_ids.has(StringName(required_id)):
 			errors.append("Mission goal references missing required survivor '%s'" % required_id)
@@ -105,6 +108,32 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		errors.append_array(wave.get_validation_errors(definitions_by_id, scenario.world_size))
 	_validate_tutorial_steps(scenario.tutorial_steps, definitions_by_id, errors)
 	return errors
+
+
+func _validate_network_connections(scenario: ScenarioDefinition, entity_ids: Dictionary, errors: Array[String]) -> void:
+	var connection_ids: Dictionary = {}
+	for connection in scenario.network_connections:
+		var connection_id := StringName(connection.get("id", ""))
+		var kind := StringName(connection.get("kind", ""))
+		var source_id := StringName(connection.get("source_id", ""))
+		var consumer_id := StringName(connection.get("consumer_id", ""))
+		if connection_id.is_empty() or connection_ids.has(connection_id):
+			errors.append("Network contains an empty or duplicate connection id '%s'" % connection_id)
+		connection_ids[connection_id] = true
+		if kind != &"energy" and kind != &"communication":
+			errors.append("Network connection '%s' has invalid kind '%s'" % [connection_id, kind])
+		if not entity_ids.has(source_id):
+			errors.append("Network connection '%s' references missing source '%s'" % [connection_id, source_id])
+		if not entity_ids.has(consumer_id):
+			errors.append("Network connection '%s' references missing consumer '%s'" % [connection_id, consumer_id])
+		if source_id == consumer_id and not source_id.is_empty():
+			errors.append("Network connection '%s' cannot connect an entity to itself" % connection_id)
+		for field in ["reserve_duration", "recovery_duration"]:
+			if float(connection.get(field, 0.0)) < 0.0:
+				errors.append("Network connection '%s' has negative %s" % [connection_id, field])
+	var degraded_fraction := float(scenario.network_defaults.get("degraded_fraction", 0.5))
+	if degraded_fraction < 0.0 or degraded_fraction > 1.0:
+		errors.append("Network degraded fraction must be between 0 and 1")
 
 
 func _validate_tutorial_steps(
