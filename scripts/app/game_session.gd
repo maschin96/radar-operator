@@ -15,6 +15,7 @@ var placement: PlacementSystem
 var infrastructure: InfrastructureSystem
 var movement: ThreatMovementSystem
 var sensors: SensorSystem
+var terrain: TerrainVisibilitySystem
 var fusion: TrackFusionSystem
 var defenses: DefenseSystem
 var simulation: SimulationCore
@@ -42,6 +43,9 @@ func initialize(scenario_definition: ScenarioDefinition) -> void:
 	movement.configure(scenario)
 	sensors = SensorSystem.new()
 	sensors.configure(scenario)
+	terrain = TerrainVisibilitySystem.new()
+	terrain.configure(scenario)
+	sensors.set_terrain_visibility_sampler(terrain.sample_visibility)
 	fusion = TrackFusionSystem.new()
 	defenses = DefenseSystem.new()
 	defenses.configure(scenario, infrastructure.get_infrastructure())
@@ -166,6 +170,9 @@ func place_system(definition_id: StringName, position: Vector2) -> Dictionary:
 		return {"success": false, "reasons": ["not_in_preparation"]}
 	var result := placement.place(definition_id, position)
 	if result.success:
+		var definition := _definition(definition_id)
+		if definition is SensorDefinition:
+			terrain.prepare_visibility_mask(position, definition.detection_range, definition.sensor_height)
 		_append_event(&"system_placed", 0.0, {
 			"entity_id": result.entity.id,
 			"definition_id": result.entity.definition_id,
@@ -173,6 +180,13 @@ func place_system(definition_id: StringName, position: Vector2) -> Dictionary:
 		})
 		state_changed.emit()
 	return result
+
+
+func get_sensor_visibility_preview(definition_id: StringName, position: Vector2) -> Dictionary:
+	var definition := _definition(definition_id)
+	if not definition is SensorDefinition:
+		return {}
+	return terrain.prepare_visibility_mask(position, definition.detection_range, definition.sensor_height)
 
 
 func remove_system(entity_id: StringName) -> bool:

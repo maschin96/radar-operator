@@ -18,6 +18,7 @@ func _run() -> void:
 	_test_update_intervals()
 	_test_seed_reproduces_measurements()
 	_test_terrain_can_block_measurement()
+	_test_terrain_reduces_accuracy_and_classification()
 	_test_player_measurement_hides_true_entity_id()
 
 	if not _failures.is_empty():
@@ -25,7 +26,7 @@ func _run() -> void:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("SENSOR SYSTEM TESTS PASSED: 5 test cases")
+	print("SENSOR SYSTEM TESTS PASSED: 6 test cases")
 	quit(0)
 
 
@@ -90,9 +91,23 @@ func _test_seed_reproduces_measurements() -> void:
 
 func _test_terrain_can_block_measurement() -> void:
 	var system: Variant = _sensor_system()
-	system.set_terrain_visibility_sampler(func(_sensor: Vector2, _threat_position: Vector2) -> float: return 0.0)
+	system.set_terrain_visibility_sampler(func(_sensor: Vector2, _threat_position: Vector2, _height: float) -> float: return 0.0)
 	var measurements: Array = system.process_tick(0.0, [_threat(Vector2(500.0, 500.0))])
 	_expect(measurements.is_empty(), "Terrain visibility of zero did not block measurement")
+
+
+func _test_terrain_reduces_accuracy_and_classification() -> void:
+	var clear_system: Variant = _sensor_system()
+	var obscured_system: Variant = _sensor_system()
+	clear_system.set_terrain_visibility_sampler(func(_sensor: Vector2, _target: Vector2, _height: float) -> float: return 1.0)
+	obscured_system.set_terrain_visibility_sampler(func(_sensor: Vector2, _target: Vector2, _height: float) -> float: return 0.7)
+	var target: Variant = _threat(Vector2(500.0, 500.0))
+	var clear_measurements: Array = clear_system.process_tick(0.0, [target])
+	var obscured_measurements: Array = obscured_system.process_tick(0.0, [target])
+	_expect(clear_measurements.size() == 1 and obscured_measurements.size() == 1, "Terrain accuracy fixture did not produce both measurements")
+	if clear_measurements.size() == 1 and obscured_measurements.size() == 1:
+		_expect(obscured_measurements[0].position_error_radius > clear_measurements[0].position_error_radius, "Obscured terrain did not increase position error")
+		_expect(obscured_measurements[0].classification_evidence < clear_measurements[0].classification_evidence, "Obscured terrain did not reduce classification confidence")
 
 
 func _test_player_measurement_hides_true_entity_id() -> void:

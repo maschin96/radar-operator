@@ -86,6 +86,7 @@ func _ready() -> void:
 	%HighContrast.toggled.connect(_on_accessibility_changed)
 	%ReducedEffects.toggled.connect(_on_accessibility_changed)
 	%NetworkLayer.toggled.connect(func(visible: bool) -> void: _map.set_layer_visible(TacticalMap.LAYER_NETWORK, visible))
+	%TerrainDebug.toggled.connect(func(visible: bool) -> void: _map.set_layer_visible(TacticalMap.LAYER_TERRAIN_DEBUG, visible))
 	%AlertsEnabled.toggled.connect(func(enabled: bool) -> void: _audio.alerts_enabled = enabled)
 	%MainMenu.pressed.connect(func() -> void: request_main_menu.emit())
 	%TrackPriority.pressed.connect(_cycle_track_priority)
@@ -265,7 +266,12 @@ func _on_map_hovered(world_position: Vector2) -> void:
 	if session == null or _selected_definition_id.is_empty() or session.phase != GameSession.Phase.PREPARATION:
 		return
 	var preview := session.placement.preview_placement(_selected_definition_id, world_position)
-	_map.set_placement_preview(world_position, float(preview.range), bool(preview.valid))
+	var visibility_mask: Dictionary = {}
+	if preview.valid:
+		visibility_mask = session.get_sensor_visibility_preview(_selected_definition_id, world_position)
+	_map.set_placement_preview(world_position, float(preview.range), bool(preview.valid), visibility_mask)
+	var stats := session.terrain.get_cache_stats()
+	%TerrainDebug.tooltip_text = "Masken: %d · Cachetreffer: %d · letzte Erzeugung: %.2f ms" % [int(stats.mask_count), int(stats.hits), float(stats.last_generation_usec) / 1000.0]
 
 
 func _on_object_selected(kind: StringName, object_id: StringName) -> void:
@@ -478,7 +484,9 @@ func _configure_briefing(scenario_definition: ScenarioDefinition) -> void:
 	_map.set_mission_geometry(
 		scenario_definition.world_size,
 		scenario_definition.placement_zones,
-		scenario_definition.blocked_zones
+		scenario_definition.blocked_zones,
+		scenario_definition.terrain_zones,
+		scenario_definition.visibility_blockers
 	)
 	_briefing_title.text = scenario_definition.display_name.to_upper()
 	_briefing_text.text = "AUFTRAG\n%s\n\nZIEL\nSchützen Sie die markierte kritische Infrastruktur bis T+%02d:%02d.\n\nBEDIENUNG\nMittlere Maustaste: Karte verschieben · Mausrad: Zoom · Leertaste: Pause · 1/2/4: Zeitfaktor · B: Briefing" % [
