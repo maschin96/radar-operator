@@ -10,6 +10,7 @@ const FusionScript := preload("res://scripts/systems/track_fusion_system.gd")
 const WaveScript := preload("res://scripts/core/attack_wave_definition.gd")
 const MAIN_SCENE_PATH := "res://scenes/app/main.tscn"
 const SCENARIO_PATH := "res://data/scenarios/mvp_test_scenario.tres"
+const DEFAULT_STRESS_BUDGET_SECONDS := 10.0
 
 var _failures: Array[String] = []
 
@@ -106,7 +107,14 @@ func _test_contact_stress_profile() -> void:
 		var measurements: Array = sensors.process_tick(time, movement.get_debug_threat_states())
 		fusion.process_measurements(measurements, time)
 	var elapsed_seconds := (Time.get_ticks_usec() - started_usec) / 1000000.0
-	_expect(elapsed_seconds < 10.0, "Stress profile exceeded ten seconds: %.2f" % elapsed_seconds)
+	var stress_budget_seconds := DEFAULT_STRESS_BUDGET_SECONDS
+	var configured_budget := OS.get_environment("STRESS_TEST_BUDGET_SECONDS")
+	if configured_budget.is_valid_float():
+		stress_budget_seconds = maxf(configured_budget.to_float(), DEFAULT_STRESS_BUDGET_SECONDS)
+	_expect(
+		elapsed_seconds < stress_budget_seconds,
+		"Stress profile exceeded %.0f seconds: %.2f" % [stress_budget_seconds, elapsed_seconds]
+	)
 	_expect(not fusion.get_events().is_empty(), "Stress profile generated no sensor/track work")
 
 

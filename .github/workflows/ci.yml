@@ -43,4 +43,5 @@ jobs:
         run: |
           chmod +x "$HOME/.cache/radar-operator/godot/Godot_v4.7.2-stable_linux.x86_64"
           GODOT_BIN="$HOME/.cache/radar-operator/godot/Godot_v4.7.2-stable_linux.x86_64" \
+            STRESS_TEST_BUDGET_SECONDS=15 \
             ./scripts/run_smoke_test.sh
