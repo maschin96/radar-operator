@@ -49,13 +49,15 @@ func process_tick(simulation_time: float, threats: Array) -> Array[SensorMeasure
 	var created: Array[SensorMeasurement] = []
 	var sensor_ids: Array = _sensors.keys()
 	sensor_ids.sort()
+	var sorted_threats := threats.duplicate()
+	sorted_threats.sort_custom(func(a: ThreatState, b: ThreatState) -> bool: return a.id < b.id)
 	for sensor_id in sensor_ids:
 		var sensor := _sensors[sensor_id] as SensorState
 		if not sensor.active or not sensor.operational or not sensor.powered:
 			continue
 		var definition := _definitions[sensor.definition_id] as SensorDefinition
 		while sensor.next_scan_time <= simulation_time + TIME_EPSILON:
-			created.append_array(_perform_scan(sensor, definition, threats, sensor.next_scan_time))
+			created.append_array(_perform_scan(sensor, definition, sorted_threats, sensor.next_scan_time))
 			sensor.scan_count += 1
 			scan_completed.emit(sensor.id, sensor.next_scan_time)
 			sensor.next_scan_time += definition.update_interval / maxf(sensor.network_quality, 0.25)
@@ -81,9 +83,7 @@ func _perform_scan(
 	scan_time: float
 ) -> Array[SensorMeasurement]:
 	var created: Array[SensorMeasurement] = []
-	var sorted_threats := threats.duplicate()
-	sorted_threats.sort_custom(func(a: ThreatState, b: ThreatState) -> bool: return a.id < b.id)
-	for threat in sorted_threats:
+	for threat in threats:
 		if not threat.active or threat.resolved:
 			continue
 		var distance := sensor.position.distance_to(threat.position)
