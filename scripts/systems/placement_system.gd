@@ -76,6 +76,8 @@ func place(definition_id: StringName, position: Vector2) -> Dictionary:
 	var entity: EntityState
 	if definition is SensorDefinition:
 		entity = SensorState.new(entity_id, definition_id, position)
+	elif definition is DefenseDefinition:
+		entity = DefenseState.new(entity_id, definition_id, position, definition.ammunition)
 	else:
 		entity = EntityState.new(entity_id, definition_id, &"player", position)
 	_placements[entity_id] = entity
@@ -123,6 +125,13 @@ func get_initial_budget() -> int:
 	return _initial_budget
 
 
+func spend_budget(amount: int) -> bool:
+	if amount < 0 or amount > _budget:
+		return false
+	_budget -= amount
+	return true
+
+
 func is_preparation_active() -> bool:
 	return _preparation_active
 
@@ -133,6 +142,10 @@ func get_placements() -> Array[EntityState]:
 		result.append(entity)
 	result.sort_custom(func(a: EntityState, b: EntityState) -> bool: return a.id < b.id)
 	return result
+
+
+func get_placement(entity_id: StringName) -> EntityState:
+	return _placements.get(entity_id) as EntityState
 
 
 func get_catalog() -> Array[EntityDefinition]:

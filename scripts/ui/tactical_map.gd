@@ -43,6 +43,7 @@ var _preview_position := Vector2.ZERO
 var _preview_range: float = 0.0
 var _preview_visible: bool = false
 var _preview_valid: bool = false
+var _relocation_preview: Dictionary = {}
 var _selected_kind: StringName
 var _selected_id: StringName
 var high_contrast: bool = false
@@ -183,6 +184,17 @@ func clear_placement_preview() -> void:
 	queue_redraw()
 
 
+func set_relocation_preview(preview: Dictionary, target: Vector2) -> void:
+	_relocation_preview = preview.duplicate(true)
+	_relocation_preview["target"] = target
+	queue_redraw()
+
+
+func clear_relocation_preview() -> void:
+	_relocation_preview.clear()
+	queue_redraw()
+
+
 func set_selected_object(kind: StringName, object_id: StringName) -> void:
 	_selected_kind = kind
 	_selected_id = object_id
@@ -203,6 +215,7 @@ func _draw() -> void:
 		_draw_ranges()
 	if is_layer_visible(LAYER_NETWORK):
 		_draw_network()
+	_draw_relocations()
 	if is_layer_visible(LAYER_INFRASTRUCTURE):
 		_draw_infrastructure()
 	if is_layer_visible(LAYER_SYSTEMS):
@@ -315,10 +328,39 @@ func _draw_infrastructure() -> void:
 func _draw_systems() -> void:
 	for state in _placement_states:
 		var position: Vector2 = world_to_screen(state.position)
-		var color := _system_network_color(state.id)
+		var color := Color("77463f") if not state.active or state.damage >= 1.0 else _system_network_color(state.id)
 		draw_circle(position, 7.0, color)
 		draw_line(position + Vector2(-11.0, 0.0), position + Vector2(11.0, 0.0), color, 1.0)
 		draw_line(position + Vector2(0.0, -11.0), position + Vector2(0.0, 11.0), color, 1.0)
+		if state.mobility_status != EntityState.MobilityStatus.STATIONARY:
+			var label: String = ["", "ABBAU", "FAHRT", "AUFBAU"][state.mobility_status]
+			draw_string(ThemeDB.fallback_font, position + Vector2(13.0, 5.0), "%s %.1fs" % [label, state.relocation_remaining], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("f1d06a"))
+
+
+func _draw_relocations() -> void:
+	for state in _placement_states:
+		if state.mobility_status == EntityState.MobilityStatus.STATIONARY:
+			continue
+		var remaining_path := PackedVector2Array([state.position])
+		for index in range(state.relocation_path_index, state.relocation_path.size()):
+			remaining_path.append(state.relocation_path[index])
+		_draw_path(remaining_path, 0, Color("efb94c"))
+		draw_arc(world_to_screen(state.relocation_target), 12.0, 0.0, TAU, 20, Color("efb94c"), 2.0)
+	if _relocation_preview.is_empty():
+		return
+	var valid := bool(_relocation_preview.get("success", false))
+	var color := Color("72e2a5") if valid else Color("e2534a")
+	if valid:
+		_draw_path(_relocation_preview.get("path", PackedVector2Array()), 0, color)
+	draw_arc(world_to_screen(_relocation_preview.target), 14.0, 0.0, TAU, 24, color, 2.0)
+
+
+func _draw_path(path: PackedVector2Array, start_index: int, color: Color) -> void:
+	if path.size() < 2:
+		return
+	var first := clampi(start_index, 0, path.size() - 1)
+	for index in range(maxi(first, 1), path.size()):
+		draw_dashed_line(world_to_screen(path[index - 1]), world_to_screen(path[index]), color, 2.0, 8.0)
 
 
 func _system_network_color(entity_id: StringName) -> Color:

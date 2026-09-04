@@ -21,6 +21,8 @@ const SAVE_PATH := "user://radar_operator_save.json"
 @onready var _status_label: Label = %BuildStatus
 @onready var _details: RichTextLabel = %Details
 @onready var _remove_button: Button = %RemoveSelected
+@onready var _relocate_button: Button = %RelocateSystem
+@onready var _cancel_relocation_button: Button = %CancelRelocation
 @onready var _event_list: ItemList = %EventList
 @onready var _start_button: Button = %StartMission
 @onready var _restart_same: Button = %RestartSame
@@ -45,6 +47,7 @@ var _selected_definition_id: StringName
 var _selected_object_kind: StringName
 var _selected_object_id: StringName
 var _catalog_buttons: Dictionary = {}
+var _relocation_targeting: bool = false
 var rule_editor: EngagementRuleEditor
 
 
@@ -76,6 +79,8 @@ func _ready() -> void:
 	%Speed2.pressed.connect(_set_time_scale.bind(2.0))
 	%Speed4.pressed.connect(_set_time_scale.bind(4.0))
 	_remove_button.pressed.connect(_remove_selected)
+	_relocate_button.pressed.connect(_begin_relocation_targeting)
+	_cancel_relocation_button.pressed.connect(_cancel_selected_relocation)
 	%EditRules.pressed.connect(_open_rule_editor)
 	_restart_same.pressed.connect(restart_mission.bind(true))
 	_restart_new.pressed.connect(restart_mission.bind(false))
@@ -134,6 +139,8 @@ func select_build_definition(definition_id: StringName) -> bool:
 	if session == null or not _catalog_buttons.has(definition_id):
 		return false
 	_selected_definition_id = definition_id
+	_relocation_targeting = false
+	_map.clear_relocation_preview()
 	_selected_object_id = &""
 	for id in _catalog_buttons:
 		(_catalog_buttons[id] as Button).button_pressed = id == definition_id
@@ -186,6 +193,7 @@ func restart_mission(same_seed: bool) -> void:
 	_event_list.clear()
 	_selected_definition_id = &""
 	_selected_object_id = &""
+	_relocation_targeting = false
 	mission_report = null
 	_create_session(next_scenario)
 	_configure_briefing(next_scenario)
@@ -211,6 +219,7 @@ func load_game(path: String = SAVE_PATH) -> Dictionary:
 	_event_list.clear()
 	_selected_definition_id = &""
 	_selected_object_id = &""
+	_relocation_targeting = false
 	mission_report = null
 	session = result.session
 	session.state_changed.connect(_refresh_ui)
@@ -235,6 +244,8 @@ func _build_catalog() -> void:
 		button.toggle_mode = true
 		button.text = "%s\n%d" % [definition.display_name, definition.purchase_cost]
 		button.tooltip_text = "%s\nReichweite: %.0f" % [definition.description, session.placement.get_definition_range(definition.id)]
+		if definition.mobile:
+			button.tooltip_text += "\nMobil · Verlegung %d Budget · Abbau %.1fs · Fahrt %.0f/s · Aufbau %.1fs" % [definition.relocation_cost, definition.teardown_duration, definition.relocation_speed, definition.setup_duration]
 		button.pressed.connect(select_build_definition.bind(definition.id))
 		_catalog.add_child(button)
 		_catalog_buttons[definition.id] = button
@@ -259,10 +270,29 @@ func _refresh_ui() -> void:
 
 
 func _on_map_clicked(world_position: Vector2) -> void:
+	if _relocation_targeting and _selected_object_kind == &"system":
+		var result := session.relocate_system(_selected_object_id, world_position)
+		if result.success:
+			_status_label.text = "Verlegung begonnen. Das System ist bis zum Abschluss nicht einsatzbereit."
+			_relocation_targeting = false
+			_map.clear_relocation_preview()
+		else:
+			_status_label.text = "Verlegung abgelehnt: " + _relocation_reasons(result.get("reasons", []))
+		_refresh_ui()
+		return
 	place_selected_at(world_position)
 
 
 func _on_map_hovered(world_position: Vector2) -> void:
+	if _relocation_targeting and _selected_object_kind == &"system":
+		var relocation_preview := session.preview_relocation(_selected_object_id, world_position)
+		_map.set_relocation_preview(relocation_preview, world_position)
+		_status_label.text = (
+			"Route gültig · Kosten %d · Dauer %.1fs · klicken zum Bestätigen" % [int(relocation_preview.cost), float(relocation_preview.duration)]
+			if relocation_preview.success
+			else "Ungültiges Verlegeziel: " + _relocation_reasons(relocation_preview.reasons)
+		)
+		return
 	if session == null or _selected_definition_id.is_empty() or session.phase != GameSession.Phase.PREPARATION:
 		return
 	var preview := session.placement.preview_placement(_selected_definition_id, world_position)
@@ -276,6 +306,8 @@ func _on_map_hovered(world_position: Vector2) -> void:
 
 func _on_object_selected(kind: StringName, object_id: StringName) -> void:
 	_selected_definition_id = &""
+	_relocation_targeting = false
+	_map.clear_relocation_preview()
 	_selected_object_kind = kind
 	_selected_object_id = object_id
 	_map.clear_placement_preview()
@@ -285,6 +317,8 @@ func _on_object_selected(kind: StringName, object_id: StringName) -> void:
 
 func _refresh_details(snapshot: Dictionary) -> void:
 	_remove_button.disabled = true
+	_relocate_button.visible = false
+	_cancel_relocation_button.visible = false
 	_set_track_controls_visible(false)
 	%ProtectionPriority.visible = false
 	if _selected_object_id.is_empty():
@@ -318,6 +352,15 @@ func _refresh_details(snapshot: Dictionary) -> void:
 					decision = defense_state.last_decision
 					break
 			_details.text = "[b]%s[/b]\nTyp: %s\nPosition: %.0f / %.0f\nReichweite: %.0f\n\nLetzte Zielentscheidung:\n%s" % [object.id, definition.display_name, object.position.x, object.position.y, session.placement.get_definition_range(object.definition_id), DefenseSystem.describe_decision(decision)]
+			var mobility_label: String = ["BEREIT", "ABBAU", "IN BEWEGUNG", "AUFBAU"][object.mobility_status] if definition.mobile else "NICHT MOBIL"
+			_details.text += "\n\nVERLEGUNG: %s" % mobility_label
+			if object.mobility_status != EntityState.MobilityStatus.STATIONARY:
+				_details.text += " · Restzeit %.1fs\nZiel: %.0f / %.0f" % [object.relocation_remaining, object.relocation_target.x, object.relocation_target.y]
+			_relocate_button.visible = definition.mobile and object.mobility_status == EntityState.MobilityStatus.STATIONARY and session.phase != GameSession.Phase.ENDED
+			_relocate_button.disabled = session.phase != GameSession.Phase.RUNNING
+			_relocate_button.text = "SYSTEM VERLEGEN · %d BUDGET" % definition.relocation_cost
+			_cancel_relocation_button.visible = object.mobility_status != EntityState.MobilityStatus.STATIONARY
+			_cancel_relocation_button.disabled = session.phase == GameSession.Phase.ENDED
 			_details.text += "\n\n" + _network_detail(session.infrastructure.get_network_state(object.id))
 			_details.text += "\nAktives Profil: " + String(session.defenses.get_rules().display_name)
 			_remove_button.disabled = session.phase != GameSession.Phase.PREPARATION
@@ -365,6 +408,42 @@ func _remove_selected() -> void:
 		_selected_object_id = &""
 		_map.set_selected_object(&"", &"")
 		_refresh_ui()
+
+
+func _begin_relocation_targeting() -> void:
+	if _selected_object_kind != &"system":
+		return
+	_relocation_targeting = true
+	_selected_definition_id = &""
+	_map.clear_placement_preview()
+	_status_label.text = "Zielposition für die Verlegung auf der Karte wählen."
+
+
+func _cancel_selected_relocation() -> void:
+	if _selected_object_kind != &"system":
+		return
+	var result := session.cancel_relocation(_selected_object_id)
+	_status_label.text = "Verlegung abgebrochen; das System baut am aktuellen Ort wieder auf." if result.success else "Abbruch nicht möglich: %s" % result.get("reason", "unbekannt")
+	_refresh_ui()
+
+
+func _relocation_reasons(reasons: Array) -> String:
+	var labels := {
+		"not_mobile": "System ist nicht mobil",
+		"relocation_in_progress": "Verlegung läuft bereits",
+		"phase_not_allowed": "in dieser Missionsphase nicht erlaubt",
+		"insufficient_budget": "Budget reicht nicht",
+		"outside_map": "außerhalb der Karte",
+		"outside_placement_zone": "außerhalb der Bauzone",
+		"blocked_zone": "Ziel liegt in einer Sperrzone",
+		"too_close_to_system": "Mindestabstand unterschritten",
+		"route_blocked": "keine befahrbare Route",
+		"unknown_entity": "System nicht gefunden",
+	}
+	var result := PackedStringArray()
+	for reason in reasons:
+		result.append(labels.get(String(reason), String(reason)))
+	return ", ".join(result)
 
 
 func _open_rule_editor() -> void:
@@ -434,6 +513,12 @@ func _event_label(type: StringName) -> String:
 		&"network_connection_changed": "NETZVERBINDUNG GEÄNDERT",
 		&"network_state_changed": "NETZZUSTAND GEÄNDERT",
 		&"power_state_changed": "ENERGIESTATUS GEÄNDERT",
+		&"relocation_started": "VERLEGUNG BEGONNEN",
+		&"relocation_phase_changed": "VERLEGEPHASE GEÄNDERT",
+		&"relocation_completed": "VERLEGUNG ABGESCHLOSSEN",
+		&"relocation_cancelled": "VERLEGUNG ABGEBROCHEN",
+		&"relocation_failed": "VERLEGUNG AUSGEFALLEN",
+		&"relocation_rejected": "VERLEGUNG ABGELEHNT",
 	}.get(type, String(type).to_upper())
 
 

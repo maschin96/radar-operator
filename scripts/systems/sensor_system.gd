@@ -53,9 +53,11 @@ func process_tick(simulation_time: float, threats: Array) -> Array[SensorMeasure
 	sorted_threats.sort_custom(func(a: ThreatState, b: ThreatState) -> bool: return a.id < b.id)
 	for sensor_id in sensor_ids:
 		var sensor := _sensors[sensor_id] as SensorState
-		if not sensor.active or not sensor.operational or not sensor.powered:
-			continue
 		var definition := _definitions[sensor.definition_id] as SensorDefinition
+		if not sensor.active or not sensor.operational or not sensor.powered:
+			# Offline and relocating sensors do not accumulate retroactive scans.
+			sensor.next_scan_time = maxf(sensor.next_scan_time, simulation_time + definition.update_interval)
+			continue
 		while sensor.next_scan_time <= simulation_time + TIME_EPSILON:
 			created.append_array(_perform_scan(sensor, definition, sorted_threats, sensor.next_scan_time))
 			sensor.scan_count += 1

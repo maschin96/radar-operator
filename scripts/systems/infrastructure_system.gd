@@ -156,6 +156,11 @@ func get_network_connections() -> Array[Dictionary]:
 	return result
 
 
+func update_system_position(entity_id: StringName, position: Vector2) -> void:
+	if _system_nodes.has(entity_id):
+		(_system_nodes[entity_id] as Dictionary).position = position
+
+
 func get_network_persistence_state() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for connection in _network_connections:
