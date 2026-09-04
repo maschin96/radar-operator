@@ -22,6 +22,7 @@ var _menu_panel: CenterContainer
 var _menu_background: ColorRect
 var _pending_binding_action: StringName
 var _pending_binding_button: Button
+var _debriefing_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -65,6 +66,7 @@ func get_mission_cards() -> Array[Dictionary]:
 			"learning_objectives": scenario.learning_objectives,
 			"unlocked": profile_manager.is_unlocked(scenario.scenario_id),
 			"completed": profile_manager.is_completed(scenario.scenario_id),
+			"best_result": profile_manager.get_mission_result(scenario.scenario_id),
 		})
 	return cards
 
@@ -86,13 +88,16 @@ func show_main_menu() -> void:
 func show_missions() -> void:
 	_clear_content()
 	_view = &"missions"
-	_add_heading("MISSIONEN", "MINI-KAMPAGNE")
+	var progress: Dictionary = profile_manager.get_campaign_progress(catalog)
+	_add_heading("MISSIONEN", "MINI-KAMPAGNE  ·  %d/%d ABGESCHLOSSEN" % [progress.completed, progress.total])
 	for card in get_mission_cards():
 		var state := "ABGESCHLOSSEN" if card.completed else ("VERFÜGBAR" if card.unlocked else "GESPERRT")
-		var button := _add_button("%02d  %s  ·  %s  ·  ca. %d min\n%s" % [
+		var result_label := _mission_result_label(int(card.best_result))
+		var button := _add_button("%02d  %s  ·  %s%s  ·  ca. %d min\n%s" % [
 			catalog.get_scenario(card.scenario_id).campaign_order,
 			card.display_name,
 			state,
+			" · " + result_label if not result_label.is_empty() else "",
 			card.duration,
 			card.summary,
 		], launch_mission.bind(card.scenario_id))
@@ -151,7 +156,7 @@ func launch_mission(scenario_id: StringName) -> bool:
 	gameplay.request_main_menu.connect(_leave_gameplay)
 	%GameplayHost.add_child(gameplay)
 	gameplay.apply_settings(settings_manager.settings)
-	gameplay.session.mission_finished.connect(_on_mission_finished.bind(scenario_id))
+	gameplay.mission_debriefing_ready.connect(_on_mission_debriefing_ready)
 	profile_manager.profile["last_played_mission"] = String(scenario_id)
 	profile_manager.save(profile_path)
 	return true
@@ -170,9 +175,57 @@ func _leave_gameplay() -> void:
 	show_main_menu()
 
 
-func _on_mission_finished(status: int, scenario_id: StringName) -> void:
+func _on_mission_debriefing_ready(data: Dictionary) -> void:
+	var scenario_id := StringName(data.get("scenario_id", ""))
+	var status := int(data.get("status", InfrastructureSystem.MissionStatus.DEFEAT))
 	profile_manager.record_mission_result(scenario_id, status, catalog)
 	profile_manager.save(profile_path)
+	show_debriefing(data)
+
+
+func show_debriefing(data: Dictionary) -> void:
+	_debriefing_data = data.duplicate(true)
+	if gameplay != null:
+		gameplay.queue_free()
+		gameplay = null
+	_menu_background.visible = true
+	_menu_panel.visible = true
+	_clear_content()
+	_view = &"debriefing"
+	var scenario_id := StringName(data.get("scenario_id", ""))
+	var scenario: ScenarioDefinition = catalog.get_scenario(scenario_id)
+	var status := int(data.get("status", InfrastructureSystem.MissionStatus.DEFEAT))
+	var metrics: Dictionary = data.get("metrics", {})
+	var outcome := "MISSION ERFÜLLT" if status == InfrastructureSystem.MissionStatus.VICTORY else "MISSION VERFEHLT"
+	_add_heading(outcome, scenario.display_name if scenario != null else String(scenario_id))
+	var report := Label.new()
+	report.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	report.custom_minimum_size.y = 150.0
+	report.text = "%s\n\nBedrohungen: %d · neutralisiert: %d · Ziel erreicht: %d\nAbwehr erfolgreich: %d · fehlgeschlagen: %d\nInfrastruktur erhalten: %d · zerstört: %d" % [
+		String(data.get("summary", "Keine missionsspezifische Auswertung hinterlegt.")),
+		int(metrics.get("threats_entered", 0)), int(metrics.get("threats_neutralized", 0)), int(metrics.get("targets_reached", 0)),
+		int(metrics.get("engagements_succeeded", 0)), int(metrics.get("engagements_failed", 0)),
+		int(metrics.get("infrastructure_survived", 0)), int(metrics.get("infrastructure_destroyed", 0)),
+	]
+	_content.add_child(report)
+	_add_button("MISSION WIEDERHOLEN", launch_mission.bind(scenario_id))
+	var next_scenario: ScenarioDefinition = profile_manager.get_next_unlocked_scenario(scenario_id, catalog)
+	if next_scenario != null:
+		_add_button("WEITER: %s" % next_scenario.display_name.to_upper(), launch_mission.bind(next_scenario.scenario_id))
+	_add_button("ZUR MISSIONSÜBERSICHT", show_missions)
+	_add_button("ZUM HAUPTMENÜ", show_main_menu)
+
+
+func get_debriefing_data() -> Dictionary:
+	return _debriefing_data.duplicate(true)
+
+
+func _mission_result_label(status: int) -> String:
+	if status == InfrastructureSystem.MissionStatus.VICTORY:
+		return "BESTES ERGEBNIS: SIEG"
+	if status == InfrastructureSystem.MissionStatus.DEFEAT:
+		return "BESTES ERGEBNIS: NIEDERLAGE"
+	return ""
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -193,7 +246,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match _view:
 		&"gameplay": _leave_gameplay()
-		&"missions", &"settings", &"credits": show_main_menu()
+		&"missions", &"settings", &"credits", &"debriefing": show_main_menu()
 
 
 func _build_shell() -> void:

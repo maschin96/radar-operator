@@ -33,6 +33,22 @@ func _run() -> void:
 	_expect(app.get_current_view() == &"gameplay", "Mission launch did not enter gameplay")
 	_expect(app.gameplay != null and app.gameplay.session.scenario.scenario_id == &"tutorial_mission_1", "Mission launch selected the wrong scenario")
 	_expect(not app._menu_background.visible and not app._menu_panel.visible, "Menu layer still obscures the gameplay field")
+	app._on_mission_debriefing_ready({
+		"scenario_id": &"tutorial_mission_1",
+		"status": InfrastructureSystem.MissionStatus.VICTORY,
+		"summary": "Testauswertung",
+		"metrics": {"threats_entered": 1, "threats_neutralized": 1, "infrastructure_survived": 1},
+	})
+	await process_frame
+	_expect(app.get_current_view() == &"debriefing", "Finished mission did not enter the debriefing view")
+	_expect(app.gameplay == null and app._menu_background.visible and app._menu_panel.visible, "Debriefing transition left gameplay active")
+	_expect(app.get_debriefing_data().summary == "Testauswertung", "Debriefing did not retain its result data")
+	var completed_cards: Array[Dictionary] = app.get_mission_cards()
+	_expect(completed_cards[0].completed, "Debriefing did not persist mission completion")
+	_expect(completed_cards[1].unlocked, "Debriefing did not unlock the next campaign mission")
+	_expect(app.launch_mission(&"mvp_test_scenario"), "Debriefing could not transition into the next campaign mission")
+	await process_frame
+	_expect(app.get_current_view() == &"gameplay" and app.gameplay.session.scenario.scenario_id == &"mvp_test_scenario", "Next-mission transition selected the wrong scenario")
 	for path in [profile_path, settings_path]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(path)
@@ -41,7 +57,7 @@ func _run() -> void:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("APP SHELL TESTS PASSED: 1 test case")
+	print("APP SHELL TESTS PASSED: 3 test cases")
 	quit(0)
 
 

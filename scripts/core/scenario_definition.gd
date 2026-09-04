@@ -16,6 +16,9 @@ const CURRENT_NETWORK_MODEL_VERSION := 1
 
 @export_group("Mission")
 @export_multiline var briefing: String
+@export var briefing_sections: Array[Dictionary] = []
+@export_multiline var victory_debriefing: String
+@export_multiline var defeat_debriefing: String
 @export var world_size := Vector2(2000.0, 1200.0)
 @export var starting_budget: int = 2500
 @export var seed: int = 1

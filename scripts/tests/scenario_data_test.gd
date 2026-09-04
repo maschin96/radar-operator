@@ -24,13 +24,14 @@ func _run() -> void:
 	_test_entity_state_roundtrip()
 	_test_mission_rule_profile()
 	_test_network_graph_validation()
+	_test_campaign_text_validation()
 
 	if not _failures.is_empty():
 		for failure in _failures:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("SCENARIO DATA TESTS PASSED: 9 test cases")
+	print("SCENARIO DATA TESTS PASSED: 10 test cases")
 	quit(0)
 
 
@@ -104,6 +105,9 @@ func _minimal_scenario() -> Variant:
 	scenario.scenario_id = &"validation_test"
 	scenario.display_name = "Validation Test"
 	scenario.summary = "Minimal valid scenario used by data validation tests."
+	scenario.briefing = "Validate the scenario."
+	scenario.victory_debriefing = "Validation succeeded."
+	scenario.defeat_debriefing = "Validation failed."
 	scenario.learning_objectives = PackedStringArray(["Validate scenario data"])
 	scenario.world_size = Vector2(100.0, 100.0)
 	scenario.starting_budget = 1
@@ -147,6 +151,14 @@ func _test_network_graph_validation() -> void:
 	scenario.network_connections[-1].source_id = &"missing_source"
 	errors = ScenarioLoader.new().validate_scenario(scenario)
 	_expect(_contains_text(errors, "missing source"), "Missing network source was not rejected")
+
+
+func _test_campaign_text_validation() -> void:
+	var scenario: ScenarioDefinition = load(SCENARIO_PATH).duplicate(true)
+	_expect(scenario.briefing_sections.size() == 3, "Scenario does not expose structured briefing sections")
+	scenario.briefing_sections.append({"id": &"mission", "title": "Duplicate", "body": "Invalid"})
+	var errors := ScenarioLoader.new().validate_scenario(scenario)
+	_expect(_contains_text(errors, "duplicate section id"), "Duplicate briefing section id was not rejected")
 
 
 func _expect(condition: bool, message: String) -> void:
