@@ -247,6 +247,12 @@ layout_mode = 2
 button_pressed = true
 text = "Energie-/Kommunikationsnetz"
 
+[node name="TerrainDebug" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Gelände-Debugansicht"
+tooltip_text = "Zeigt Höhenzonen, Sichtblocker und Masken-Cacheprofil."
+
 [node name="AlertsEnabled" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2

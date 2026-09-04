@@ -6,6 +6,7 @@ extends EntityDefinition
 @export_range(0.0, 1.0) var classification_strength: float = 0.25
 @export var position_error: float = 30.0
 @export_range(0.0, 1.0) var resistance: float = 0.5
+@export var sensor_height: float = 20.0
 @export var power_demand: float = 10.0
 @export var mobile: bool = false
 
@@ -22,6 +23,8 @@ func get_validation_errors() -> Array[String]:
 		errors.append("Sensor '%s' has an invalid update interval" % id)
 	if position_error < 0.0:
 		errors.append("Sensor '%s' has a negative position error" % id)
+	if sensor_height < 0.0:
+		errors.append("Sensor '%s' has a negative sensor height" % id)
 	if power_demand < 0.0:
 		errors.append("Sensor '%s' has a negative power demand" % id)
 	return errors

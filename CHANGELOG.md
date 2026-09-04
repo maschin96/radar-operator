@@ -10,6 +10,9 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 - automatische Netzanbindung platzierter Sensor- und Abwehrsysteme mit zeitlich abgestuften Reserve- und Wiederherstellungseffekten
 - schaltbare Kartenebene sowie Quellen-, Reserve- und Ursachenanzeige in den Lagedetails
 - protokollierte Netzereignisse und deterministische Save-/Load- sowie Replay-Abdeckung
+- versioniertes Höhenzonen- und Sichtblockermodell mit deterministisch quantisierten Sichtbarkeitsmasken
+- gecachte Sensorabdeckungsvorschau, Gelände-Debugansicht und Laufzeitprofil der Maskenerzeugung
+- Geländeeinfluss auf Erfassungswahrscheinlichkeit, Klassifikation und Positionsfehler
 
 ### Migration
 

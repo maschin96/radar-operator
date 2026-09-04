@@ -89,7 +89,7 @@ func _perform_scan(
 		var distance := sensor.position.distance_to(threat.position)
 		if distance > definition.detection_range + TIME_EPSILON:
 			continue
-		var visibility := _sample_terrain_visibility(sensor.position, threat.position)
+		var visibility := _sample_terrain_visibility(sensor.position, threat.position, definition.sensor_height)
 		if visibility <= 0.0:
 			continue
 		var threat_definition := _get_threat_definition(threat.definition_id)
@@ -110,6 +110,7 @@ func _perform_scan(
 			threat,
 			threat_definition,
 			distance_ratio,
+			visibility,
 			scan_time
 		)
 		created.append(measurement)
@@ -124,9 +125,11 @@ func _create_measurement(
 	threat: ThreatState,
 	threat_definition: ThreatDefinition,
 	distance_ratio: float,
+	visibility: float,
 	scan_time: float
 ) -> SensorMeasurement:
-	var maximum_error := definition.position_error * (0.25 + distance_ratio * 0.75)
+	var terrain_error_multiplier := lerpf(2.5, 1.0, visibility)
+	var maximum_error := definition.position_error * (0.25 + distance_ratio * 0.75) * terrain_error_multiplier
 	var error_distance := sqrt(_random.randf()) * maximum_error
 	var error_direction := _random.randf() * TAU
 	var position_offset := Vector2.from_angle(error_direction) * error_distance
@@ -134,7 +137,8 @@ func _create_measurement(
 		definition.classification_strength
 		* (0.4 + threat_definition.signature_strength * 0.6)
 		* (1.0 - distance_ratio * 0.35)
-		* sensor.network_quality,
+		* sensor.network_quality
+		* visibility,
 		0.0,
 		1.0
 	)
@@ -151,10 +155,10 @@ func _create_measurement(
 	return measurement
 
 
-func _sample_terrain_visibility(sensor_position: Vector2, threat_position: Vector2) -> float:
+func _sample_terrain_visibility(sensor_position: Vector2, threat_position: Vector2, sensor_height: float) -> float:
 	if not _terrain_visibility_sampler.is_valid():
 		return 1.0
-	return clampf(float(_terrain_visibility_sampler.call(sensor_position, threat_position)), 0.0, 1.0)
+	return clampf(float(_terrain_visibility_sampler.call(sensor_position, threat_position, sensor_height)), 0.0, 1.0)
 
 
 func _get_threat_definition(definition_id: StringName) -> ThreatDefinition:

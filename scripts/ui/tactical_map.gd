@@ -18,6 +18,7 @@ const LAYER_SYSTEMS := &"systems"
 const LAYER_TRACKS := &"tracks"
 const LAYER_RANGES := &"ranges"
 const LAYER_NETWORK := &"network"
+const LAYER_TERRAIN_DEBUG := &"terrain_debug"
 const LAYER_SELECTION := &"selection"
 
 @export var world_size := Vector2(2000.0, 1200.0):
@@ -35,6 +36,9 @@ var _track_states: Array = []
 var _network_connections: Array = []
 var _placement_zones: Array[Rect2] = []
 var _blocked_zones: Array[Rect2] = []
+var _terrain_zones: Array = []
+var _visibility_blockers: Array = []
+var _visibility_preview: Dictionary = {}
 var _preview_position := Vector2.ZERO
 var _preview_range: float = 0.0
 var _preview_visible: bool = false
@@ -50,6 +54,7 @@ var _layers: Dictionary = {
 	LAYER_TRACKS: true,
 	LAYER_RANGES: true,
 	LAYER_NETWORK: true,
+	LAYER_TERRAIN_DEBUG: false,
 	LAYER_SELECTION: true,
 }
 
@@ -153,24 +158,28 @@ func set_world_state(infrastructure_states: Array, placement_states: Array, trac
 	queue_redraw()
 
 
-func set_mission_geometry(new_world_size: Vector2, placement_zones: Array[Rect2], blocked_zones: Array[Rect2]) -> void:
+func set_mission_geometry(new_world_size: Vector2, placement_zones: Array[Rect2], blocked_zones: Array[Rect2], terrain_zones: Array = [], visibility_blockers: Array = []) -> void:
 	world_size = new_world_size
 	_placement_zones = placement_zones.duplicate()
 	_blocked_zones = blocked_zones.duplicate()
+	_terrain_zones = terrain_zones.duplicate(true)
+	_visibility_blockers = visibility_blockers.duplicate(true)
 	set_camera(new_world_size * 0.5, zoom_level)
 	queue_redraw()
 
 
-func set_placement_preview(position: Vector2, range_value: float, valid: bool) -> void:
+func set_placement_preview(position: Vector2, range_value: float, valid: bool, visibility_mask: Dictionary = {}) -> void:
 	_preview_position = position
 	_preview_range = range_value
 	_preview_valid = valid
+	_visibility_preview = visibility_mask.duplicate(true)
 	_preview_visible = true
 	queue_redraw()
 
 
 func clear_placement_preview() -> void:
 	_preview_visible = false
+	_visibility_preview.clear()
 	queue_redraw()
 
 
@@ -231,13 +240,20 @@ func _draw_terrain() -> void:
 		var screen_rect := Rect2(world_to_screen(zone.position), zone.size * zoom_level)
 		draw_rect(screen_rect, Color(0.92, 0.24, 0.20, 0.10), true)
 		draw_rect(screen_rect, Color(0.95, 0.34, 0.28, 0.7), false, 1.5)
+	if is_layer_visible(LAYER_TERRAIN_DEBUG):
+		_draw_terrain_debug()
 
 
 func _draw_ranges() -> void:
 	if _preview_visible:
-		var center := world_to_screen(_preview_position)
+		var preview_center: Vector2 = _visibility_preview.get("origin", _preview_position)
+		var center := world_to_screen(preview_center)
 		var color := Color("72e2a5") if _preview_valid else Color("f16e58")
-		draw_circle(center, _preview_range * zoom_level, Color(color, 0.08))
+		if not _visibility_preview.is_empty() and _preview_valid:
+			_draw_visibility_mask(_visibility_preview)
+		else:
+			draw_circle(center, _preview_range * zoom_level, Color(color, 0.08))
+		draw_dashed_line(center + Vector2(-_preview_range * zoom_level, 0.0), center + Vector2(_preview_range * zoom_level, 0.0), Color(color, 0.20), 1.0, 8.0)
 		draw_arc(center, _preview_range * zoom_level, 0.0, TAU, 80, Color(color, 0.65), 1.5)
 
 
@@ -256,6 +272,34 @@ func _draw_network() -> void:
 		if not bool(connection.enabled):
 			color.a = 0.45
 		draw_dashed_line(from, to, color, 2.0, 8.0) if status == InfrastructureState.NetworkStatus.OFFLINE else draw_line(from, to, color, 2.0)
+
+
+func _draw_visibility_mask(mask: Dictionary) -> void:
+	var offset: Vector2i = mask.offset
+	var cell_size := float(mask.cell_size)
+	var width := int(mask.width)
+	for y in int(mask.height):
+		for x in width:
+			var value := float(mask.values[y * width + x]) / TerrainVisibilitySystem.VISIBILITY_SCALE
+			if value <= 0.0:
+				continue
+			var world_position := Vector2(offset.x + x, offset.y + y) * cell_size
+			var rect := Rect2(world_to_screen(world_position), Vector2.ONE * cell_size * zoom_level)
+			var color := Color("72e2a5") if value >= 0.75 else Color("efb94c") if value >= 0.4 else Color("e2534a")
+			color.a = 0.05 + value * 0.10
+			draw_rect(rect, color, true)
+
+
+func _draw_terrain_debug() -> void:
+	for zone in _terrain_zones:
+		var rect := Rect2(world_to_screen(zone.area.position), zone.area.size * zoom_level)
+		draw_rect(rect, Color(0.55, 0.47, 0.25, 0.22), true)
+		draw_rect(rect, Color("c9a858"), false, 2.0)
+		draw_string(ThemeDB.fallback_font, rect.position + Vector2(6.0, 16.0), "%s H%.0f V%.0f%%" % [String(zone.get("terrain_type", "Gelände")), float(zone.get("height", 0.0)), float(zone.get("visibility_factor", 1.0)) * 100.0], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("f1d690"))
+	for blocker in _visibility_blockers:
+		var rect := Rect2(world_to_screen(blocker.area.position), blocker.area.size * zoom_level)
+		draw_rect(rect, Color(0.85, 0.28, 0.22, 0.18), true)
+		draw_rect(rect, Color("e56b59"), false, 2.0)
 
 
 func _draw_infrastructure() -> void:

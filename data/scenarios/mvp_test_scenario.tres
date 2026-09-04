@@ -51,6 +51,17 @@ starting_entities = Array[Dictionary]([{
 attack_waves = Array[Resource]([ExtResource("13")])
 placement_zones = Array[Rect2]([Rect2(80, 80, 1840, 1040)])
 blocked_zones = Array[Rect2]([Rect2(940, 550, 120, 120), Rect2(470, 340, 100, 100), Rect2(1460, 740, 100, 100)])
+terrain_zones = Array[Dictionary]([{
+"area": Rect2(0, 0, 450, 350),
+"height": 120.0,
+"terrain_type": &"highlands",
+"visibility_factor": 0.75
+}])
+visibility_blockers = Array[Dictionary]([{
+"area": Rect2(300, 0, 100, 350),
+"height": 180.0,
+"visibility_factor": 0.25
+}])
 network_connections = Array[Dictionary]([{
 "consumer_id": &"capital_command",
 "id": &"energy_power_command",

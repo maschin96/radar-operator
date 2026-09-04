@@ -59,6 +59,8 @@ func _test_independent_layers(tactical_map: Variant) -> void:
 	_expect(tactical_map.is_layer_visible(&"terrain"), "Hiding tracks also hid terrain")
 	_expect(tactical_map.set_layer_visible(&"network", false), "Network layer was rejected")
 	_expect(not tactical_map.is_layer_visible(&"network"), "Network layer did not hide")
+	_expect(tactical_map.set_layer_visible(&"terrain_debug", true), "Terrain debug layer was rejected")
+	_expect(tactical_map.is_layer_visible(&"terrain_debug"), "Terrain debug layer did not become visible")
 	_expect(not tactical_map.set_layer_visible(&"nonexistent", false), "Unknown layer was accepted")
 
 

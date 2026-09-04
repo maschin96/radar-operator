@@ -52,6 +52,7 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		errors.append("Scenario duration must be positive")
 	if scenario.network_model_version != ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION:
 		errors.append("Network model version %d is incompatible; supported version is %d" % [scenario.network_model_version, ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION])
+	_validate_terrain(scenario, errors)
 	for zone in scenario.placement_zones:
 		if zone.size.x <= 0.0 or zone.size.y <= 0.0:
 			errors.append("Scenario contains an empty placement zone")
@@ -134,6 +135,32 @@ func _validate_network_connections(scenario: ScenarioDefinition, entity_ids: Dic
 	var degraded_fraction := float(scenario.network_defaults.get("degraded_fraction", 0.5))
 	if degraded_fraction < 0.0 or degraded_fraction > 1.0:
 		errors.append("Network degraded fraction must be between 0 and 1")
+
+
+func _validate_terrain(scenario: ScenarioDefinition, errors: Array[String]) -> void:
+	if scenario.terrain_model_version != ScenarioDefinition.CURRENT_TERRAIN_MODEL_VERSION:
+		errors.append("Terrain model version %d is incompatible; supported version is %d" % [scenario.terrain_model_version, ScenarioDefinition.CURRENT_TERRAIN_MODEL_VERSION])
+	if scenario.terrain_cell_size <= 0.0 or scenario.terrain_default_height < 0.0:
+		errors.append("Terrain cell size and default height must be valid")
+	var world_bounds := Rect2(Vector2.ZERO, scenario.world_size)
+	for index in scenario.terrain_zones.size():
+		var zone: Dictionary = scenario.terrain_zones[index]
+		_validate_terrain_area(zone, world_bounds, "Terrain zone %d" % index, errors)
+		if StringName(zone.get("terrain_type", "")).is_empty():
+			errors.append("Terrain zone %d has no terrain type" % index)
+	for index in scenario.visibility_blockers.size():
+		_validate_terrain_area(scenario.visibility_blockers[index], world_bounds, "Visibility blocker %d" % index, errors)
+
+
+func _validate_terrain_area(data: Dictionary, world_bounds: Rect2, label: String, errors: Array[String]) -> void:
+	var area: Variant = data.get("area")
+	if not area is Rect2 or area.size.x <= 0.0 or area.size.y <= 0.0 or not world_bounds.encloses(area):
+		errors.append("%s has an invalid area" % label)
+	if float(data.get("height", 0.0)) < 0.0:
+		errors.append("%s has a negative height" % label)
+	var visibility_factor := float(data.get("visibility_factor", 1.0))
+	if visibility_factor < 0.0 or visibility_factor > 1.0:
+		errors.append("%s visibility factor must be between 0 and 1" % label)
 
 
 func _validate_tutorial_steps(

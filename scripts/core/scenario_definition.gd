@@ -3,6 +3,7 @@ extends Resource
 
 const CURRENT_CONTENT_VERSION := 1
 const CURRENT_NETWORK_MODEL_VERSION := 1
+const CURRENT_TERRAIN_MODEL_VERSION := 1
 
 @export_group("Catalog Metadata")
 @export var content_version: int = CURRENT_CONTENT_VERSION
@@ -25,6 +26,12 @@ const CURRENT_NETWORK_MODEL_VERSION := 1
 @export var attack_waves: Array[Resource] = []
 @export var placement_zones: Array[Rect2] = []
 @export var blocked_zones: Array[Rect2] = []
+@export_group("Terrain")
+@export var terrain_model_version: int = CURRENT_TERRAIN_MODEL_VERSION
+@export_range(10.0, 200.0, 10.0) var terrain_cell_size: float = 50.0
+@export var terrain_default_height: float = 0.0
+@export var terrain_zones: Array[Dictionary] = []
+@export var visibility_blockers: Array[Dictionary] = []
 @export var energy_connections: Array[Dictionary] = []
 @export_group("Network")
 @export var network_model_version: int = CURRENT_NETWORK_MODEL_VERSION
