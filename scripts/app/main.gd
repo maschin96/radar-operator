@@ -2,6 +2,7 @@ class_name MainScreen
 extends Control
 
 signal request_main_menu
+signal mission_debriefing_ready(data: Dictionary)
 
 const Log := preload("res://scripts/core/app_log.gd")
 const Loader := preload("res://scripts/core/scenario_loader.gd")
@@ -464,6 +465,12 @@ func _on_mission_finished(_status: int) -> void:
 	_details.text = "[b]MISSIONSAUSWERTUNG[/b]\nBedrohungen: %d\nNeutralisiert: %d\nZiel erreicht: %d\nAbwehr erfolgreich: %d\nAbwehr fehlgeschlagen: %d\nInfrastruktur erhalten: %d\nInfrastruktur zerstört: %d\n\nEreignisse können in der Zeitleiste ausgewählt und gefiltert werden." % [metrics.threats_entered, metrics.threats_neutralized, metrics.targets_reached, metrics.engagements_succeeded, metrics.engagements_failed, metrics.infrastructure_survived, metrics.infrastructure_destroyed]
 	_restart_same.visible = true
 	_restart_new.visible = true
+	mission_debriefing_ready.emit({
+		"scenario_id": session.scenario.scenario_id,
+		"status": _status,
+		"metrics": metrics.duplicate(true),
+		"summary": session.scenario.victory_debriefing if _status == InfrastructureSystem.MissionStatus.VICTORY else session.scenario.defeat_debriefing,
+	})
 
 
 func _create_session(scenario_definition: ScenarioDefinition) -> void:
@@ -481,8 +488,14 @@ func _configure_briefing(scenario_definition: ScenarioDefinition) -> void:
 		scenario_definition.blocked_zones
 	)
 	_briefing_title.text = scenario_definition.display_name.to_upper()
-	_briefing_text.text = "AUFTRAG\n%s\n\nZIEL\nSchützen Sie die markierte kritische Infrastruktur bis T+%02d:%02d.\n\nBEDIENUNG\nMittlere Maustaste: Karte verschieben · Mausrad: Zoom · Leertaste: Pause · 1/2/4: Zeitfaktor · B: Briefing" % [
-		scenario_definition.briefing,
+	var briefing_content := scenario_definition.briefing
+	if not scenario_definition.briefing_sections.is_empty():
+		var blocks: PackedStringArray = []
+		for section in scenario_definition.briefing_sections:
+			blocks.append("%s\n%s" % [String(section.title).to_upper(), String(section.body)])
+		briefing_content = "\n\n".join(blocks)
+	_briefing_text.text = "%s\n\nZEITZIEL\nSchützen Sie die markierte kritische Infrastruktur bis T+%02d:%02d.\n\nBEDIENUNG\nMittlere Maustaste: Karte verschieben · Mausrad: Zoom · Leertaste: Pause · 1/2/4: Zeitfaktor · B: Briefing" % [
+		briefing_content,
 		int(scenario_definition.mission_duration) / 60,
 		int(scenario_definition.mission_duration) % 60,
 	]

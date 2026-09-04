@@ -50,6 +50,7 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		errors.append("Scenario budget cannot be negative")
 	if scenario.mission_duration <= 0.0:
 		errors.append("Scenario duration must be positive")
+	_validate_campaign_text(scenario, errors)
 	if scenario.network_model_version != ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION:
 		errors.append("Network model version %d is incompatible; supported version is %d" % [scenario.network_model_version, ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION])
 	for zone in scenario.placement_zones:
@@ -108,6 +109,25 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		errors.append_array(wave.get_validation_errors(definitions_by_id, scenario.world_size))
 	_validate_tutorial_steps(scenario.tutorial_steps, definitions_by_id, errors)
 	return errors
+
+
+func _validate_campaign_text(scenario: ScenarioDefinition, errors: Array[String]) -> void:
+	if scenario.briefing.strip_edges().is_empty():
+		errors.append("Scenario briefing is empty")
+	if scenario.victory_debriefing.strip_edges().is_empty():
+		errors.append("Scenario victory debriefing is empty")
+	if scenario.defeat_debriefing.strip_edges().is_empty():
+		errors.append("Scenario defeat debriefing is empty")
+	var section_ids: Dictionary = {}
+	for section in scenario.briefing_sections:
+		var section_id := StringName(section.get("id", ""))
+		if section_id.is_empty() or section_ids.has(section_id):
+			errors.append("Briefing contains an empty or duplicate section id '%s'" % section_id)
+		section_ids[section_id] = true
+		if String(section.get("title", "")).strip_edges().is_empty():
+			errors.append("Briefing section '%s' has no title" % section_id)
+		if String(section.get("body", "")).strip_edges().is_empty():
+			errors.append("Briefing section '%s' has no body" % section_id)
 
 
 func _validate_network_connections(scenario: ScenarioDefinition, entity_ids: Dictionary, errors: Array[String]) -> void:
