@@ -24,13 +24,14 @@ func _run() -> void:
 	_test_entity_state_roundtrip()
 	_test_mission_rule_profile()
 	_test_network_graph_validation()
+	_test_mobility_profile_validation()
 
 	if not _failures.is_empty():
 		for failure in _failures:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("SCENARIO DATA TESTS PASSED: 9 test cases")
+	print("SCENARIO DATA TESTS PASSED: 10 test cases")
 	quit(0)
 
 
@@ -93,10 +94,17 @@ func _test_entity_state_roundtrip() -> void:
 	var original: Variant = EntityStateScript.new(&"entity_7", &"sensor_test", &"player", Vector2(12.5, 33.0))
 	original.active = false
 	original.damage = 0.25
+	original.mobility_status = EntityState.MobilityStatus.MOVING
+	original.relocation_target = Vector2(80.0, 90.0)
+	original.relocation_path = PackedVector2Array([original.position, original.relocation_target])
+	original.relocation_path_index = 1
+	original.relocation_remaining = 2.5
 	var restored: Variant = EntityStateScript.from_dictionary(original.to_dictionary())
 	_expect(restored.id == original.id, "Entity id changed during serialization")
 	_expect(restored.position.is_equal_approx(original.position), "Entity position changed during serialization")
+	_expect(restored.initial_position.is_equal_approx(original.initial_position), "Entity initial position changed during serialization")
 	_expect(restored.active == original.active and is_equal_approx(restored.damage, original.damage), "Entity state changed during serialization")
+	_expect(restored.mobility_status == original.mobility_status and restored.relocation_target == original.relocation_target, "Entity relocation state changed during serialization")
 
 
 func _minimal_scenario() -> Variant:
@@ -147,6 +155,20 @@ func _test_network_graph_validation() -> void:
 	scenario.network_connections[-1].source_id = &"missing_source"
 	errors = ScenarioLoader.new().validate_scenario(scenario)
 	_expect(_contains_text(errors, "missing source"), "Missing network source was not rejected")
+
+
+func _test_mobility_profile_validation() -> void:
+	var scenario: ScenarioDefinition = load(SCENARIO_PATH).duplicate(true)
+	var mobile_definition: EntityDefinition
+	for definition in scenario.definitions:
+		if definition is EntityDefinition and definition.mobile:
+			mobile_definition = definition
+			break
+	_expect(mobile_definition != null, "Scenario exposes no mobile system")
+	if mobile_definition != null:
+		mobile_definition.relocation_speed = 0.0
+		var errors := ScenarioLoader.new().validate_scenario(scenario)
+		_expect(_contains_text(errors, "invalid relocation timing"), "Invalid mobile relocation profile was not rejected")
 
 
 func _expect(condition: bool, message: String) -> void:

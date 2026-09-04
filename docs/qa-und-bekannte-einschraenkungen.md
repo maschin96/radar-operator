@@ -6,7 +6,7 @@ Der Vertical Slice umfasst eine vollständige Mission von Briefing und Vorbereit
 
 Die automatisierte Suite führt Projektimport, Parserprüfung, Unit- und Integrationstests aus. Sie deckt Simulationszeit, Datenvalidierung, Bedrohungsbewegung, Sensorik, Track-Fusion, Platzierung, Abwehr, Infrastruktur, UI-Fluss, Auswertung und Persistenz ab.
 
-Letzte Gesamtabnahme: 4. September 2026 mit Godot 4.7.2. Der Projekt-Smoke-Test und alle 86 Testfälle bestanden ohne Scriptfehler. Neben der vollständigen 180-Sekunden-Vertical-Slice-Mission wurde Tutorial Mission 1 vom Briefing über alle zehn Lernschritte bis zur Auswertung automatisiert durchgespielt. Hauptnavigation, Missionskatalog, Profilfortschritt, Einstellungen, Netzgraph, Sichtbarkeitsmasken sowie die drei Zielauflösungen werden zusätzlich headless geprüft.
+Letzte Gesamtabnahme: 4. September 2026 mit Godot 4.7.2. Der Projekt-Smoke-Test und alle 94 Testfälle bestanden ohne Scriptfehler. Neben der vollständigen 180-Sekunden-Vertical-Slice-Mission wurde Tutorial Mission 1 vom Briefing über alle zehn Lernschritte bis zur Auswertung automatisiert durchgespielt. Hauptnavigation, Missionskatalog, Profilfortschritt, Einstellungen, Netzgraph, Sichtbarkeitsmasken, mobile Systeme sowie die drei Zielauflösungen werden zusätzlich headless geprüft.
 
 Der geführte Referenzpfad der Tutorialmission muss mit einem unbeschädigten Kraftwerk, mindestens einer erfolgreichen Abwehr und ohne Zieleinschlag enden. Dafür nutzt die Mission bewusst eigene, fehlertolerante Übungswerte; die Balance der freien Mission bleibt unverändert.
 
@@ -45,7 +45,7 @@ Die Build-Pipeline ist damit für alle drei MVP-Zielplattformen funktionsfähig.
 
 - Tutorial Mission 1 und das ursprüngliche Vertical-Slice-Szenario sind über die Missionsauswahl erreichbar; weitere Kampagnenmissionen fehlen noch.
 - Das Geländemodell nutzt bewusst abstrakte Höhenzonen statt einer hochauflösenden topografischen Karte.
-- Mobile Systeme, elektronische Störungen und Täuschkontakte sind noch nicht spielbar.
+- Elektronische Störungen und Täuschkontakte sind noch nicht spielbar. Mobile Systeme nutzen bewusst eine abstrahierte Rasterroute statt einer detaillierten Straßen- oder Fahrphysik.
 - Einsatzregelprofile, Vorschau und Entscheidungserklärungen sind spielbar. Missionen können ein Startprofil referenzieren; eine kampagnenweite Profilbibliothek ist noch nicht vorgesehen.
 - Das Replay speichert sekündliche spielersichtbare Zustände, bietet aber noch keine animierte Scrubber-Oberfläche.
 - Sprachmeldungen sind noch durch priorisierte synthetische Warntöne ersetzt.
@@ -57,7 +57,7 @@ Die Build-Pipeline ist damit für alle drei MVP-Zielplattformen funktionsfähig.
 
 1. Missionsauswahl und Tutorial Mission 2 für manuelle Zielpriorisierung und Energieausfälle.
 2. Zusätzliche Missionskarten und Balancing der Geländezonen.
-3. Mobile Systeme und Störmechaniken.
+3. Störmechaniken und Täuschkontakte.
 4. Animierte Replay-Zeitleiste und filterbare Entscheidungsereignisse.
 5. Externe Spieltests, Balancing-Telemetrie und finale Audio-/Grafikproduktion.
 6. Signierte Plattform-Builds und plattformspezifische Eingabe-/Leistungstests.

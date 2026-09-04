@@ -13,10 +13,13 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 - versioniertes Höhenzonen- und Sichtblockermodell mit deterministisch quantisierten Sichtbarkeitsmasken
 - gecachte Sensorabdeckungsvorschau, Gelände-Debugansicht und Laufzeitprofil der Maskenerzeugung
 - Geländeeinfluss auf Erfassungswahrscheinlichkeit, Klassifikation und Positionsfehler
+- datengetriebene Mobilitätsprofile für Sensor- und Abwehrsysteme mit Kosten und erlaubten Missionsphasen
+- deterministische Routenplanung sowie sichtbare Abbau-, Fahrt-, Aufbau- und Bereitschaftszustände
+- Verlegevorschau, Abbruch, Ausfallbehandlung und vollständige Save-/Replay-Abdeckung aller Verlegephasen
 
 ### Migration
 
-- Spielstände verwenden Formatversion 3, da Netzzustände und Netzbefehle deterministisch rekonstruiert werden. Ältere Spielstände werden bis zur allgemeinen Migration in #18 eindeutig abgelehnt.
+- Spielstände verwenden Formatversion 4, da ursprüngliche Aufstellpositionen, Verlegezustände und Verlegebefehle deterministisch rekonstruiert werden. Ältere Spielstände werden bis zur allgemeinen Migration in #18 eindeutig abgelehnt.
 
 ### Geplant
 

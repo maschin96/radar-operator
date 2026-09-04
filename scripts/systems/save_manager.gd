@@ -1,7 +1,7 @@
 class_name SaveManager
 extends RefCounted
 
-const FORMAT_VERSION := 3
+const FORMAT_VERSION := 4
 
 
 func save_session(session: GameSession, path: String) -> Dictionary:
@@ -60,7 +60,7 @@ func load_session(path: String) -> Dictionary:
 		return String(left.get("id", "")) < String(right.get("id", ""))
 	)
 	for placement_data in saved_placements:
-		var position_data: Dictionary = placement_data.position
+		var position_data: Dictionary = placement_data.get("initial_position", placement_data.position)
 		var result := session.place_system(
 			StringName(placement_data.definition_id),
 			Vector2(float(position_data.x), float(position_data.y))
