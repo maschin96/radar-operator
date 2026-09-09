@@ -87,7 +87,9 @@ func add_defense(entity: EntityState) -> DefenseState:
 		push_warning("Unknown defense definition: %s" % entity.definition_id)
 		return null
 	var definition := _definitions[entity.definition_id] as DefenseDefinition
-	var defense := DefenseState.new(entity.id, entity.definition_id, entity.position, definition.ammunition)
+	var defense := entity as DefenseState
+	if defense == null:
+		defense = DefenseState.new(entity.id, entity.definition_id, entity.position, definition.ammunition)
 	_defenses[defense.id] = defense
 	return defense
 

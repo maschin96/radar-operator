@@ -8,7 +8,6 @@ extends EntityDefinition
 @export_range(0.0, 1.0) var resistance: float = 0.5
 @export var sensor_height: float = 20.0
 @export var power_demand: float = 10.0
-@export var mobile: bool = false
 
 
 func _init() -> void:

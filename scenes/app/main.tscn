@@ -231,6 +231,18 @@ layout_mode = 2
 visible = false
 text = "SCHUTZPRIORITÄT: NORMAL"
 
+[node name="RelocateSystem" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "SYSTEM VERLEGEN"
+
+[node name="CancelRelocation" type="Button" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "VERLEGUNG ABBRECHEN"
+
 [node name="HighContrast" type="CheckButton" parent="Margin/Layout/Body/DetailPanel/DetailMargin/DetailScroll/DetailLayout"]
 unique_name_in_owner = true
 layout_mode = 2
