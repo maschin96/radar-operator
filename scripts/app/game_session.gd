@@ -15,6 +15,9 @@ var placement: PlacementSystem
 var infrastructure: InfrastructureSystem
 var movement: ThreatMovementSystem
 var sensors: SensorSystem
+var terrain: TerrainVisibilitySystem
+var relocations: RelocationSystem
+var electronic_warfare: ElectronicWarfareSystem
 var fusion: TrackFusionSystem
 var defenses: DefenseSystem
 var simulation: SimulationCore
@@ -42,6 +45,14 @@ func initialize(scenario_definition: ScenarioDefinition) -> void:
 	movement.configure(scenario)
 	sensors = SensorSystem.new()
 	sensors.configure(scenario)
+	terrain = TerrainVisibilitySystem.new()
+	terrain.configure(scenario)
+	sensors.set_terrain_visibility_sampler(terrain.sample_visibility)
+	relocations = RelocationSystem.new()
+	relocations.configure(scenario)
+	electronic_warfare = ElectronicWarfareSystem.new()
+	electronic_warfare.configure(scenario)
+	sensors.set_electronic_warfare(electronic_warfare.sample_jamming, electronic_warfare.get_decoy_returns)
 	fusion = TrackFusionSystem.new()
 	defenses = DefenseSystem.new()
 	defenses.configure(scenario, infrastructure.get_infrastructure())
@@ -144,6 +155,11 @@ func replay_player_command(command: Dictionary) -> Dictionary:
 			return set_defense_rules(command.data.rules)
 		&"set_network_connection_enabled":
 			return set_network_connection_enabled(StringName(command.data.connection_id), bool(command.data.enabled))
+		&"relocate_system":
+			var target: Dictionary = command.data.target
+			return relocate_system(StringName(command.data.entity_id), Vector2(float(target.x), float(target.y)))
+		&"cancel_relocation":
+			return cancel_relocation(StringName(command.data.entity_id))
 	return {"success": false, "reason": "unknown_command"}
 
 
@@ -161,11 +177,57 @@ func set_network_connection_enabled(connection_id: StringName, enabled: bool) ->
 	return result
 
 
+func preview_relocation(entity_id: StringName, target: Vector2) -> Dictionary:
+	return relocations.preview_relocation(
+		placement.get_placement(entity_id),
+		target,
+		placement.get_placements(),
+		_phase_name(),
+		placement.get_budget()
+	)
+
+
+func relocate_system(entity_id: StringName, target: Vector2) -> Dictionary:
+	_record_player_command(&"relocate_system", {
+		"entity_id": String(entity_id),
+		"target": {"x": target.x, "y": target.y},
+	})
+	var preview := preview_relocation(entity_id, target)
+	if not preview.success:
+		_append_event(&"relocation_rejected", _simulation_time(), {
+			"entity_id": String(entity_id),
+			"target": target,
+			"reasons": preview.reasons,
+		}, &"relocation")
+		return preview
+	if not placement.spend_budget(int(preview.cost)):
+		return {"success": false, "reasons": ["insufficient_budget"]}
+	var result := relocations.begin_relocation(placement.get_placement(entity_id), preview, _simulation_time())
+	_apply_network_to_systems()
+	_collect_events(_simulation_time())
+	state_changed.emit()
+	return result
+
+
+func cancel_relocation(entity_id: StringName) -> Dictionary:
+	_record_player_command(&"cancel_relocation", {"entity_id": String(entity_id)})
+	if phase == Phase.ENDED:
+		return {"success": false, "reason": "mission_ended"}
+	var result := relocations.cancel_relocation(placement.get_placement(entity_id), _simulation_time())
+	_apply_network_to_systems()
+	_collect_events(_simulation_time())
+	state_changed.emit()
+	return result
+
+
 func place_system(definition_id: StringName, position: Vector2) -> Dictionary:
 	if phase != Phase.PREPARATION:
 		return {"success": false, "reasons": ["not_in_preparation"]}
 	var result := placement.place(definition_id, position)
 	if result.success:
+		var definition := _definition(definition_id)
+		if definition is SensorDefinition:
+			terrain.prepare_visibility_mask(position, definition.detection_range, definition.sensor_height)
 		_append_event(&"system_placed", 0.0, {
 			"entity_id": result.entity.id,
 			"definition_id": result.entity.definition_id,
@@ -173,6 +235,13 @@ func place_system(definition_id: StringName, position: Vector2) -> Dictionary:
 		})
 		state_changed.emit()
 	return result
+
+
+func get_sensor_visibility_preview(definition_id: StringName, position: Vector2) -> Dictionary:
+	var definition := _definition(definition_id)
+	if not definition is SensorDefinition:
+		return {}
+	return terrain.prepare_visibility_mask(position, definition.detection_range, definition.sensor_height)
 
 
 func remove_system(entity_id: StringName) -> bool:
@@ -221,6 +290,7 @@ func get_snapshot() -> Dictionary:
 		"tracks": fusion.get_active_tracks(),
 		"defenses": defenses.get_defenses(),
 		"network_connections": infrastructure.get_network_connections(),
+		"electronic_warfare": electronic_warfare.get_player_state(float(simulation_snapshot.simulation_time)),
 		"mission_status": infrastructure.get_mission_status(),
 		"events": events,
 	}
@@ -282,6 +352,7 @@ func get_persistence_snapshot() -> Dictionary:
 		"sensors": sensor_data,
 		"defenses": defense_data,
 		"network_connections": infrastructure.get_network_persistence_state(),
+		"electronic_warfare": electronic_warfare.get_persistence_state(float(simulation_data.simulation_time)),
 		"defense_rules": defenses.get_rules(),
 		"player_commands": player_commands.duplicate(true),
 		"mission_status": infrastructure.get_mission_status(),
@@ -292,6 +363,10 @@ func get_persistence_snapshot() -> Dictionary:
 func _on_simulation_tick(_tick: int) -> void:
 	var simulation_time: float = simulation.get_snapshot().simulation_time
 	movement.process_tick(TICK_DURATION, simulation_time)
+	relocations.process_tick(TICK_DURATION, simulation_time, placement.get_placements())
+	for entity in placement.get_placements():
+		infrastructure.update_system_position(entity.id, entity.position)
+	electronic_warfare.process_tick(simulation_time)
 	infrastructure.process_tick(TICK_DURATION, simulation_time)
 	_apply_network_to_systems()
 	var measurements := sensors.process_tick(simulation_time, movement.get_debug_threat_states())
@@ -330,6 +405,8 @@ func _collect_events(simulation_time: float) -> void:
 	_collect_source(&"fusion", fusion.get_events(), simulation_time)
 	_collect_source(&"defense", defenses.get_events(), simulation_time)
 	_collect_source(&"infrastructure", infrastructure.get_events(), simulation_time)
+	_collect_source(&"relocation", relocations.get_events(), simulation_time)
+	_collect_source(&"electronic_warfare", electronic_warfare.get_events(), simulation_time)
 
 
 func _collect_source(source: StringName, source_events: Array, fallback_time: float) -> void:
@@ -384,6 +461,10 @@ func _simulation_time() -> float:
 	return float(simulation.get_snapshot().simulation_time)
 
 
+func _phase_name() -> StringName:
+	return [&"preparation", &"running", &"ended"][phase]
+
+
 func _record_replay_frame(simulation_time: float) -> void:
 	if simulation_time + 0.000000001 < _next_replay_time:
 		return
@@ -393,11 +474,16 @@ func _record_replay_frame(simulation_time: float) -> void:
 	var infrastructure_data: Array[Dictionary] = []
 	for state in infrastructure.get_infrastructure():
 		infrastructure_data.append(state.to_dictionary())
+	var placement_data: Array[Dictionary] = []
+	for entity in placement.get_placements():
+		placement_data.append(entity.to_dictionary())
 	replay_frames.append({
 		"simulation_time": simulation_time,
 		"tracks": track_data,
 		"infrastructure": infrastructure_data,
+		"placements": placement_data,
 		"network_connections": infrastructure.get_network_connections(),
+		"electronic_warfare": electronic_warfare.get_player_state(simulation_time),
 	})
 	_next_replay_time = floorf(simulation_time) + 1.0
 
@@ -414,15 +500,17 @@ func _apply_network_to_systems() -> void:
 		var state := infrastructure.get_network_state(sensor.id)
 		if state.is_empty():
 			continue
-		sensor.powered = int(state.energy_status) != InfrastructureState.NetworkStatus.OFFLINE
-		sensor.operational = int(state.communication_status) != InfrastructureState.NetworkStatus.OFFLINE
+		var deployed := sensor.mobility_status == EntityState.MobilityStatus.STATIONARY
+		sensor.powered = int(state.energy_status) != InfrastructureState.NetworkStatus.OFFLINE and deployed and sensor.active and sensor.damage < 1.0
+		sensor.operational = int(state.communication_status) != InfrastructureState.NetworkStatus.OFFLINE and deployed and sensor.active and sensor.damage < 1.0
 		sensor.network_quality = minf(_network_quality(int(state.energy_status)), _network_quality(int(state.communication_status)))
 	for defense in defenses.get_defenses():
 		var state := infrastructure.get_network_state(defense.id)
 		if state.is_empty():
 			continue
-		defense.powered = int(state.energy_status) != InfrastructureState.NetworkStatus.OFFLINE
-		defense.operational = int(state.communication_status) != InfrastructureState.NetworkStatus.OFFLINE
+		var deployed := defense.mobility_status == EntityState.MobilityStatus.STATIONARY
+		defense.powered = int(state.energy_status) != InfrastructureState.NetworkStatus.OFFLINE and deployed and defense.active and defense.damage < 1.0
+		defense.operational = int(state.communication_status) != InfrastructureState.NetworkStatus.OFFLINE and deployed and defense.active and defense.damage < 1.0
 		defense.network_quality = minf(_network_quality(int(state.energy_status)), _network_quality(int(state.communication_status)))
 
 

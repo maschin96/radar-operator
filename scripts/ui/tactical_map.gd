@@ -18,6 +18,8 @@ const LAYER_SYSTEMS := &"systems"
 const LAYER_TRACKS := &"tracks"
 const LAYER_RANGES := &"ranges"
 const LAYER_NETWORK := &"network"
+const LAYER_TERRAIN_DEBUG := &"terrain_debug"
+const LAYER_ELECTRONIC_WARFARE := &"electronic_warfare"
 const LAYER_SELECTION := &"selection"
 
 @export var world_size := Vector2(2000.0, 1200.0):
@@ -35,10 +37,16 @@ var _track_states: Array = []
 var _network_connections: Array = []
 var _placement_zones: Array[Rect2] = []
 var _blocked_zones: Array[Rect2] = []
+var _terrain_zones: Array = []
+var _visibility_blockers: Array = []
+var _jamming_zones: Array = []
+var _electronic_warfare_state: Dictionary = {}
+var _visibility_preview: Dictionary = {}
 var _preview_position := Vector2.ZERO
 var _preview_range: float = 0.0
 var _preview_visible: bool = false
 var _preview_valid: bool = false
+var _relocation_preview: Dictionary = {}
 var _selected_kind: StringName
 var _selected_id: StringName
 var high_contrast: bool = false
@@ -50,6 +58,8 @@ var _layers: Dictionary = {
 	LAYER_TRACKS: true,
 	LAYER_RANGES: true,
 	LAYER_NETWORK: true,
+	LAYER_TERRAIN_DEBUG: false,
+	LAYER_ELECTRONIC_WARFARE: true,
 	LAYER_SELECTION: true,
 }
 
@@ -145,32 +155,49 @@ func get_debug_text() -> String:
 	]
 
 
-func set_world_state(infrastructure_states: Array, placement_states: Array, track_states: Array, network_connections: Array = []) -> void:
+func set_world_state(infrastructure_states: Array, placement_states: Array, track_states: Array, network_connections: Array = [], electronic_warfare_state: Dictionary = {}) -> void:
 	_infrastructure_states = infrastructure_states
 	_placement_states = placement_states
 	_track_states = track_states
 	_network_connections = network_connections
+	_electronic_warfare_state = electronic_warfare_state.duplicate(true)
 	queue_redraw()
 
 
-func set_mission_geometry(new_world_size: Vector2, placement_zones: Array[Rect2], blocked_zones: Array[Rect2]) -> void:
+func set_mission_geometry(new_world_size: Vector2, placement_zones: Array[Rect2], blocked_zones: Array[Rect2], terrain_zones: Array = [], visibility_blockers: Array = [], jamming_zones: Array = []) -> void:
 	world_size = new_world_size
 	_placement_zones = placement_zones.duplicate()
 	_blocked_zones = blocked_zones.duplicate()
+	_terrain_zones = terrain_zones.duplicate(true)
+	_visibility_blockers = visibility_blockers.duplicate(true)
+	_jamming_zones = jamming_zones.duplicate(true)
 	set_camera(new_world_size * 0.5, zoom_level)
 	queue_redraw()
 
 
-func set_placement_preview(position: Vector2, range_value: float, valid: bool) -> void:
+func set_placement_preview(position: Vector2, range_value: float, valid: bool, visibility_mask: Dictionary = {}) -> void:
 	_preview_position = position
 	_preview_range = range_value
 	_preview_valid = valid
+	_visibility_preview = visibility_mask.duplicate(true)
 	_preview_visible = true
 	queue_redraw()
 
 
 func clear_placement_preview() -> void:
 	_preview_visible = false
+	_visibility_preview.clear()
+	queue_redraw()
+
+
+func set_relocation_preview(preview: Dictionary, target: Vector2) -> void:
+	_relocation_preview = preview.duplicate(true)
+	_relocation_preview["target"] = target
+	queue_redraw()
+
+
+func clear_relocation_preview() -> void:
+	_relocation_preview.clear()
 	queue_redraw()
 
 
@@ -194,6 +221,9 @@ func _draw() -> void:
 		_draw_ranges()
 	if is_layer_visible(LAYER_NETWORK):
 		_draw_network()
+	_draw_relocations()
+	if is_layer_visible(LAYER_ELECTRONIC_WARFARE):
+		_draw_electronic_warfare()
 	if is_layer_visible(LAYER_INFRASTRUCTURE):
 		_draw_infrastructure()
 	if is_layer_visible(LAYER_SYSTEMS):
@@ -231,13 +261,20 @@ func _draw_terrain() -> void:
 		var screen_rect := Rect2(world_to_screen(zone.position), zone.size * zoom_level)
 		draw_rect(screen_rect, Color(0.92, 0.24, 0.20, 0.10), true)
 		draw_rect(screen_rect, Color(0.95, 0.34, 0.28, 0.7), false, 1.5)
+	if is_layer_visible(LAYER_TERRAIN_DEBUG):
+		_draw_terrain_debug()
 
 
 func _draw_ranges() -> void:
 	if _preview_visible:
-		var center := world_to_screen(_preview_position)
+		var preview_center: Vector2 = _visibility_preview.get("origin", _preview_position)
+		var center := world_to_screen(preview_center)
 		var color := Color("72e2a5") if _preview_valid else Color("f16e58")
-		draw_circle(center, _preview_range * zoom_level, Color(color, 0.08))
+		if not _visibility_preview.is_empty() and _preview_valid:
+			_draw_visibility_mask(_visibility_preview)
+		else:
+			draw_circle(center, _preview_range * zoom_level, Color(color, 0.08))
+		draw_dashed_line(center + Vector2(-_preview_range * zoom_level, 0.0), center + Vector2(_preview_range * zoom_level, 0.0), Color(color, 0.20), 1.0, 8.0)
 		draw_arc(center, _preview_range * zoom_level, 0.0, TAU, 80, Color(color, 0.65), 1.5)
 
 
@@ -258,6 +295,46 @@ func _draw_network() -> void:
 		draw_dashed_line(from, to, color, 2.0, 8.0) if status == InfrastructureState.NetworkStatus.OFFLINE else draw_line(from, to, color, 2.0)
 
 
+func _draw_visibility_mask(mask: Dictionary) -> void:
+	var offset: Vector2i = mask.offset
+	var cell_size := float(mask.cell_size)
+	var width := int(mask.width)
+	for y in int(mask.height):
+		for x in width:
+			var value := float(mask.values[y * width + x]) / TerrainVisibilitySystem.VISIBILITY_SCALE
+			if value <= 0.0:
+				continue
+			var world_position := Vector2(offset.x + x, offset.y + y) * cell_size
+			var rect := Rect2(world_to_screen(world_position), Vector2.ONE * cell_size * zoom_level)
+			var color := Color("72e2a5") if value >= 0.75 else Color("efb94c") if value >= 0.4 else Color("e2534a")
+			color.a = 0.05 + value * 0.10
+			draw_rect(rect, color, true)
+
+
+func _draw_terrain_debug() -> void:
+	for zone in _terrain_zones:
+		var rect := Rect2(world_to_screen(zone.area.position), zone.area.size * zoom_level)
+		draw_rect(rect, Color(0.55, 0.47, 0.25, 0.22), true)
+		draw_rect(rect, Color("c9a858"), false, 2.0)
+		draw_string(ThemeDB.fallback_font, rect.position + Vector2(6.0, 16.0), "%s H%.0f V%.0f%%" % [String(zone.get("terrain_type", "Gelände")), float(zone.get("height", 0.0)), float(zone.get("visibility_factor", 1.0)) * 100.0], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("f1d690"))
+	for blocker in _visibility_blockers:
+		var rect := Rect2(world_to_screen(blocker.area.position), blocker.area.size * zoom_level)
+		draw_rect(rect, Color(0.85, 0.28, 0.22, 0.18), true)
+		draw_rect(rect, Color("e56b59"), false, 2.0)
+
+
+func _draw_electronic_warfare() -> void:
+	var levels: Dictionary = _electronic_warfare_state.get("zone_levels", {})
+	for zone in _jamming_zones:
+		var level := float(levels.get(String(zone.get("id", "")), 0.0))
+		if level <= 0.0:
+			continue
+		var rect := Rect2(world_to_screen(zone.area.position), zone.area.size * zoom_level)
+		draw_rect(rect, Color(0.67, 0.30, 0.82, 0.08 + level * 0.16), true)
+		draw_dashed_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color("c88be3"), 2.0, 8.0)
+		draw_string(ThemeDB.fallback_font, rect.position + Vector2(6.0, 17.0), "INTERFERENZ %.0f%%" % (level * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("e0b3f2"))
+
+
 func _draw_infrastructure() -> void:
 	for state in _infrastructure_states:
 		var color := Color("f0c86a") if state.active else Color("77463f")
@@ -271,10 +348,39 @@ func _draw_infrastructure() -> void:
 func _draw_systems() -> void:
 	for state in _placement_states:
 		var position: Vector2 = world_to_screen(state.position)
-		var color := _system_network_color(state.id)
+		var color := Color("77463f") if not state.active or state.damage >= 1.0 else _system_network_color(state.id)
 		draw_circle(position, 7.0, color)
 		draw_line(position + Vector2(-11.0, 0.0), position + Vector2(11.0, 0.0), color, 1.0)
 		draw_line(position + Vector2(0.0, -11.0), position + Vector2(0.0, 11.0), color, 1.0)
+		if state.mobility_status != EntityState.MobilityStatus.STATIONARY:
+			var label: String = ["", "ABBAU", "FAHRT", "AUFBAU"][state.mobility_status]
+			draw_string(ThemeDB.fallback_font, position + Vector2(13.0, 5.0), "%s %.1fs" % [label, state.relocation_remaining], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("f1d06a"))
+
+
+func _draw_relocations() -> void:
+	for state in _placement_states:
+		if state.mobility_status == EntityState.MobilityStatus.STATIONARY:
+			continue
+		var remaining_path := PackedVector2Array([state.position])
+		for index in range(state.relocation_path_index, state.relocation_path.size()):
+			remaining_path.append(state.relocation_path[index])
+		_draw_path(remaining_path, 0, Color("efb94c"))
+		draw_arc(world_to_screen(state.relocation_target), 12.0, 0.0, TAU, 20, Color("efb94c"), 2.0)
+	if _relocation_preview.is_empty():
+		return
+	var valid := bool(_relocation_preview.get("success", false))
+	var color := Color("72e2a5") if valid else Color("e2534a")
+	if valid:
+		_draw_path(_relocation_preview.get("path", PackedVector2Array()), 0, color)
+	draw_arc(world_to_screen(_relocation_preview.target), 14.0, 0.0, TAU, 24, color, 2.0)
+
+
+func _draw_path(path: PackedVector2Array, start_index: int, color: Color) -> void:
+	if path.size() < 2:
+		return
+	var first := clampi(start_index, 0, path.size() - 1)
+	for index in range(maxi(first, 1), path.size()):
+		draw_dashed_line(world_to_screen(path[index - 1]), world_to_screen(path[index]), color, 2.0, 8.0)
 
 
 func _system_network_color(entity_id: StringName) -> Color:
@@ -292,7 +398,11 @@ func _draw_tracks() -> void:
 		var color := Color("ff5d4a") if track.classification == &"hostile" else Color("8fffd1")
 		if not high_contrast:
 			color = Color("f16e58") if track.classification == &"hostile" else Color("78d5b1")
+		if track.possible_deception:
+			color = Color("efb94c")
 		var marker := ["", "!", "!!"][track.priority] as String
+		if track.possible_deception:
+			marker += " ?"
 		marker += ["", " FREI", " GESPERRT"][track.release_status]
 		draw_string(ThemeDB.fallback_font, position + Vector2(12, -12), String(track.id) + " " + marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
 		draw_circle(position, radius, Color(color, 0.10))

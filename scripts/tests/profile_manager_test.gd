@@ -67,14 +67,22 @@ func _test_four_mission_campaign_flow() -> void:
 	_expect(result.success, "Synthetic four-mission campaign was rejected: " + str(result.errors))
 	var campaign_profile: Variant = ProfileScript.new()
 	campaign_profile.create_default(four_mission_catalog)
-	for index in 3:
+	for index in 4:
 		var current_id := StringName("campaign_%d" % (index + 1))
 		var next_id := StringName("campaign_%d" % (index + 2))
 		_expect(campaign_profile.is_unlocked(current_id), "Campaign mission was not unlocked in sequence")
 		campaign_profile.record_mission_result(current_id, InfrastructureSystem.MissionStatus.VICTORY, four_mission_catalog)
-		_expect(campaign_profile.is_unlocked(next_id), "Campaign victory did not unlock the following mission")
+		if index < 3:
+			_expect(campaign_profile.is_unlocked(next_id), "Campaign victory did not unlock the following mission")
+		_expect(campaign_profile.save(TEST_PATH).success, "Campaign progress could not be saved")
+		var restarted := ProfileManager.new()
+		_expect(restarted.load_or_create(TEST_PATH, four_mission_catalog).success, "Campaign progress did not survive restart")
+		campaign_profile = restarted
+		for completed_index in range(index + 1):
+			var completed_id := StringName("campaign_%d" % (completed_index + 1))
+			_expect(campaign_profile.is_unlocked(completed_id) and campaign_profile.is_completed(completed_id), "Completed mission cannot be replayed after restart")
 	var progress: Dictionary = campaign_profile.get_campaign_progress(four_mission_catalog)
-	_expect(progress.completed == 3 and progress.total == 4, "Four-mission campaign progress was calculated incorrectly")
+	_expect(progress.completed == 4 and progress.total == 4, "Four-mission campaign progress was calculated incorrectly")
 
 
 func _expect(condition: bool, message: String) -> void:

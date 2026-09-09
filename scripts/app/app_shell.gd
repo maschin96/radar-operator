@@ -148,6 +148,8 @@ func launch_mission(scenario_id: StringName) -> bool:
 	if scenario == null:
 		_status.text = "Mission '%s' fehlt im Inhaltskatalog." % scenario_id
 		return false
+	if gameplay != null:
+		gameplay.queue_free()
 	_view = &"gameplay"
 	_menu_background.visible = false
 	_menu_panel.visible = false
@@ -179,8 +181,10 @@ func _on_mission_debriefing_ready(data: Dictionary) -> void:
 	var scenario_id := StringName(data.get("scenario_id", ""))
 	var status := int(data.get("status", InfrastructureSystem.MissionStatus.DEFEAT))
 	profile_manager.record_mission_result(scenario_id, status, catalog)
-	profile_manager.save(profile_path)
+	var save_result: Dictionary = profile_manager.save(profile_path)
 	show_debriefing(data)
+	if not save_result.success:
+		_status.text = "Fortschritt konnte nicht gespeichert werden: " + "\n".join(save_result.errors)
 
 
 func show_debriefing(data: Dictionary) -> void:
@@ -208,7 +212,7 @@ func show_debriefing(data: Dictionary) -> void:
 		int(metrics.get("infrastructure_survived", 0)), int(metrics.get("infrastructure_destroyed", 0)),
 	]
 	_content.add_child(report)
-	_add_button("MISSION WIEDERHOLEN", launch_mission.bind(scenario_id))
+	_add_button("MISSION WIEDERHOLEN", launch_mission.bind(scenario_id)).grab_focus()
 	var next_scenario: ScenarioDefinition = profile_manager.get_next_unlocked_scenario(scenario_id, catalog)
 	if next_scenario != null:
 		_add_button("WEITER: %s" % next_scenario.display_name.to_upper(), launch_mission.bind(next_scenario.scenario_id))

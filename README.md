@@ -9,7 +9,7 @@
 [![Godot](https://img.shields.io/badge/Godot-4.7.2-478CBF?logo=godot-engine&logoColor=white)](https://godotengine.org/)
 [![Godot CI](https://github.com/maschin96/radar-operator/actions/workflows/ci.yml/badge.svg)](https://github.com/maschin96/radar-operator/actions/workflows/ci.yml)
 ![GDScript](https://img.shields.io/badge/GDScript-statisch_typisiert-355570)
-![Tests](https://img.shields.io/badge/Tests-84_erfolgreich-2ea44f)
+![Tests](https://img.shields.io/badge/Tests-112_erfolgreich-2ea44f)
 ![Status](https://img.shields.io/badge/Status-spielbarer_Prototyp-f0a202)
 [![License: GPL v3+](https://img.shields.io/badge/License-GPL_v3%2B-blue.svg)](LICENSE)
 
@@ -31,9 +31,12 @@ Alle Staaten, Systeme, Signaturen und Leistungswerte sind fiktiv. Das Projekt bi
 - freie Platzierung von Radar- und Abwehrsystemen innerhalb eines Budgets
 - feste, deterministische Simulation mit Pause sowie 1×-, 2×- und 4×-Tempo
 - Sensorerfassung, Messfehler, Track-Fusion und Klassifikationskonfidenz
+- zeitabhängige Störzonen und plausible Täuschtracks mit spielersichtbaren Konsistenzindizien
+- deterministische Höhenzonen, Sichtblocker und gecachte Sensorabdeckungsmasken
 - automatische Zielpriorisierung, Munitions- und Abwehrzustände
 - manuelle Trackpriorität sowie protokollierte Freigabe, Sperre und Rücknahme
 - kritische Infrastruktur sowie versionierte Energie- und Kommunikationsnetze mit Notbetrieb
+- mobile Sensor- und Abwehrsysteme mit Routenprüfung, Abbau, Fahrt, Aufbau und Verlegekosten
 - Ereignisprotokoll, Missionsauswertung und Replay-Daten
 - deterministisches Speichern und Laden
 - Kontrastmodus, reduzierte Effekte und deaktivierbare Warntöne
@@ -115,7 +118,7 @@ Balancing und Szenarien liegen als textbasierte Godot Resources unter `data/`. D
 
 ## Tests
 
-Die vollständige Suite importiert das Projekt headless und führt 84 deterministische Unit-, Integrations- und End-to-End-Testfälle aus:
+Die vollständige Suite importiert das Projekt headless und führt 112 deterministische Unit-, Integrations- und End-to-End-Testfälle aus:
 
 ```sh
 ./scripts/run_smoke_test.sh
@@ -163,6 +166,9 @@ scripts/tests/       Headless Unit-, Integrations- und End-to-End-Tests
 - [Einsatzregeln und Entscheidungserklärungen](docs/einsatzregeln.md)
 - [Energie- und Kommunikationsnetz](docs/energie-und-kommunikationsnetz.md)
 - [Kampagnenfluss und Missionsrahmen](docs/kampagnenfluss.md)
+- [Gelände, Höhe und Sichtbarkeit](docs/gelaende-und-sichtbarkeit.md)
+- [Mobile Systeme und Verlegung](docs/mobile-systeme-und-verlegung.md)
+- [Elektronische Störung und Täuschkontakte](docs/elektronische-stoerung-und-taeuschkontakte.md)
 - [Produktvision v0.5 Public Demo](docs/produktvision-v0.5.md)
 - [Änderungsverlauf](CHANGELOG.md)
 - [Hinweise für Beiträge](CONTRIBUTING.md)
