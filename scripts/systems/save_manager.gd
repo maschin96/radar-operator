@@ -1,7 +1,7 @@
 class_name SaveManager
 extends RefCounted
 
-const FORMAT_VERSION := 3
+const FORMAT_VERSION := 4
 
 
 func save_session(session: GameSession, path: String) -> Dictionary:

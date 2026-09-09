@@ -129,6 +129,7 @@ func _create_track(measurement: SensorMeasurement) -> TrackState:
 	track.measurement_count = 1
 	track.reporting_sensors[measurement.sensor_id] = true
 	track.debug_source_entities[measurement.debug_source_entity_id] = true
+	_update_evidence(track, measurement)
 	track.classification_confidence = measurement.classification_evidence * 0.65
 	track.refresh_classification()
 	track.last_update_summary = {
@@ -169,6 +170,7 @@ func _update_track(track: TrackState, measurement: SensorMeasurement) -> void:
 	track.measurement_count += 1
 	track.reporting_sensors[measurement.sensor_id] = true
 	track.debug_source_entities[measurement.debug_source_entity_id] = true
+	_update_evidence(track, measurement)
 	track.classification_confidence = 1.0 - (
 		1.0 - track.classification_confidence
 	) * (1.0 - measurement.classification_evidence * 0.65)
@@ -204,6 +206,24 @@ func _measurement_scan_key(measurement: SensorMeasurement) -> String:
 	return "%s@%.6f" % [measurement.sensor_id, measurement.timestamp]
 
 
+func _update_evidence(track: TrackState, measurement: SensorMeasurement) -> void:
+	var indicators := measurement.quality_indicators
+	var consistency := clampf(float(indicators.get("signal_consistency", 1.0)), 0.0, 1.0)
+	var previous_count := maxi(track.measurement_count - 1, 0)
+	track.signal_consistency = (track.signal_consistency * previous_count + consistency) / maxf(track.measurement_count, 1)
+	track.interference_level = maxf(track.interference_level * 0.85, clampf(float(indicators.get("interference_level", 0.0)), 0.0, 1.0))
+	track.possible_deception = track.signal_consistency < 0.62
+	track.evidence_notes = PackedStringArray()
+	if track.interference_level >= 0.35:
+		track.evidence_notes.append("Erhöhte Interferenz im Messbereich")
+	if track.signal_consistency < 0.62:
+		track.evidence_notes.append("Messgeometrie ist nicht stabil konsistent")
+	if track.reporting_sensors.size() <= 1:
+		track.evidence_notes.append("Bisher nur durch einen Sensor abgestützt")
+	else:
+		track.evidence_notes.append("Durch mehrere Sensoren abgestützt")
+
+
 func _record_event(type: StringName, track: TrackState) -> void:
 	_events.append({
 		"type": type,
@@ -212,5 +232,8 @@ func _record_event(type: StringName, track: TrackState) -> void:
 		"position": track.estimated_position,
 		"uncertainty": track.uncertainty_radius,
 		"classification": track.classification,
+		"interference_level": track.interference_level,
+		"signal_consistency": track.signal_consistency,
+		"possible_deception": track.possible_deception,
 		"source_entities": track.debug_source_entities.keys(),
 	})

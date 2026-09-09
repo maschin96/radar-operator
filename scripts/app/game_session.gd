@@ -16,6 +16,7 @@ var infrastructure: InfrastructureSystem
 var movement: ThreatMovementSystem
 var sensors: SensorSystem
 var terrain: TerrainVisibilitySystem
+var electronic_warfare: ElectronicWarfareSystem
 var fusion: TrackFusionSystem
 var defenses: DefenseSystem
 var simulation: SimulationCore
@@ -46,6 +47,9 @@ func initialize(scenario_definition: ScenarioDefinition) -> void:
 	terrain = TerrainVisibilitySystem.new()
 	terrain.configure(scenario)
 	sensors.set_terrain_visibility_sampler(terrain.sample_visibility)
+	electronic_warfare = ElectronicWarfareSystem.new()
+	electronic_warfare.configure(scenario)
+	sensors.set_electronic_warfare(electronic_warfare.sample_jamming, electronic_warfare.get_decoy_returns)
 	fusion = TrackFusionSystem.new()
 	defenses = DefenseSystem.new()
 	defenses.configure(scenario, infrastructure.get_infrastructure())
@@ -235,6 +239,7 @@ func get_snapshot() -> Dictionary:
 		"tracks": fusion.get_active_tracks(),
 		"defenses": defenses.get_defenses(),
 		"network_connections": infrastructure.get_network_connections(),
+		"electronic_warfare": electronic_warfare.get_player_state(float(simulation_snapshot.simulation_time)),
 		"mission_status": infrastructure.get_mission_status(),
 		"events": events,
 	}
@@ -296,6 +301,7 @@ func get_persistence_snapshot() -> Dictionary:
 		"sensors": sensor_data,
 		"defenses": defense_data,
 		"network_connections": infrastructure.get_network_persistence_state(),
+		"electronic_warfare": electronic_warfare.get_persistence_state(float(simulation_data.simulation_time)),
 		"defense_rules": defenses.get_rules(),
 		"player_commands": player_commands.duplicate(true),
 		"mission_status": infrastructure.get_mission_status(),
@@ -306,6 +312,7 @@ func get_persistence_snapshot() -> Dictionary:
 func _on_simulation_tick(_tick: int) -> void:
 	var simulation_time: float = simulation.get_snapshot().simulation_time
 	movement.process_tick(TICK_DURATION, simulation_time)
+	electronic_warfare.process_tick(simulation_time)
 	infrastructure.process_tick(TICK_DURATION, simulation_time)
 	_apply_network_to_systems()
 	var measurements := sensors.process_tick(simulation_time, movement.get_debug_threat_states())
@@ -344,6 +351,7 @@ func _collect_events(simulation_time: float) -> void:
 	_collect_source(&"fusion", fusion.get_events(), simulation_time)
 	_collect_source(&"defense", defenses.get_events(), simulation_time)
 	_collect_source(&"infrastructure", infrastructure.get_events(), simulation_time)
+	_collect_source(&"electronic_warfare", electronic_warfare.get_events(), simulation_time)
 
 
 func _collect_source(source: StringName, source_events: Array, fallback_time: float) -> void:
@@ -412,6 +420,7 @@ func _record_replay_frame(simulation_time: float) -> void:
 		"tracks": track_data,
 		"infrastructure": infrastructure_data,
 		"network_connections": infrastructure.get_network_connections(),
+		"electronic_warfare": electronic_warfare.get_player_state(simulation_time),
 	})
 	_next_replay_time = floorf(simulation_time) + 1.0
 

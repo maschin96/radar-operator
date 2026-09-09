@@ -14,6 +14,8 @@ var _random := RandomNumberGenerator.new()
 var _next_measurement_id: int = 1
 var _all_measurements: Array[SensorMeasurement] = []
 var _terrain_visibility_sampler: Callable
+var _jamming_sampler: Callable
+var _decoy_return_provider: Callable
 
 
 func configure(scenario: ScenarioDefinition) -> void:
@@ -32,6 +34,11 @@ func configure(scenario: ScenarioDefinition) -> void:
 
 func set_terrain_visibility_sampler(sampler: Callable) -> void:
 	_terrain_visibility_sampler = sampler
+
+
+func set_electronic_warfare(jamming_sampler: Callable, decoy_return_provider: Callable) -> void:
+	_jamming_sampler = jamming_sampler
+	_decoy_return_provider = decoy_return_provider
 
 
 func add_sensor(sensor: SensorState) -> bool:
@@ -60,7 +67,8 @@ func process_tick(simulation_time: float, threats: Array) -> Array[SensorMeasure
 			created.append_array(_perform_scan(sensor, definition, sorted_threats, sensor.next_scan_time))
 			sensor.scan_count += 1
 			scan_completed.emit(sensor.id, sensor.next_scan_time)
-			sensor.next_scan_time += definition.update_interval / maxf(sensor.network_quality, 0.25)
+			var scan_jamming := _sample_jamming(definition.id, sensor.position, sensor.position, sensor.next_scan_time)
+			sensor.next_scan_time += definition.update_interval * (1.0 + scan_jamming * 2.0) / maxf(sensor.network_quality, 0.25)
 	return created
 
 
@@ -96,12 +104,13 @@ func _perform_scan(
 		if threat_definition == null:
 			continue
 		var distance_ratio := clampf(distance / definition.detection_range, 0.0, 1.0)
+		var jamming := _sample_jamming(definition.id, sensor.position, threat.position, scan_time)
 		var detection_score := (
 			threat_definition.signature_strength * 0.75
 			+ (1.0 - distance_ratio) * 0.35
 			+ definition.resistance * 0.10
 			+ _random.randf_range(-0.08, 0.08)
-		) * visibility
+		) * visibility * (1.0 - jamming * 0.65)
 		if detection_score < DETECTION_THRESHOLD:
 			continue
 		var measurement := _create_measurement(
@@ -111,11 +120,13 @@ func _perform_scan(
 			threat_definition,
 			distance_ratio,
 			visibility,
+			jamming,
 			scan_time
 		)
 		created.append(measurement)
 		_all_measurements.append(measurement)
 		measurement_created.emit(measurement)
+	created.append_array(_create_decoy_measurements(sensor, definition, scan_time))
 	return created
 
 
@@ -126,10 +137,11 @@ func _create_measurement(
 	threat_definition: ThreatDefinition,
 	distance_ratio: float,
 	visibility: float,
+	jamming: float,
 	scan_time: float
 ) -> SensorMeasurement:
 	var terrain_error_multiplier := lerpf(2.5, 1.0, visibility)
-	var maximum_error := definition.position_error * (0.25 + distance_ratio * 0.75) * terrain_error_multiplier
+	var maximum_error := definition.position_error * (0.25 + distance_ratio * 0.75) * terrain_error_multiplier * (1.0 + jamming * 2.0)
 	var error_distance := sqrt(_random.randf()) * maximum_error
 	var error_direction := _random.randf() * TAU
 	var position_offset := Vector2.from_angle(error_direction) * error_distance
@@ -138,7 +150,8 @@ func _create_measurement(
 		* (0.4 + threat_definition.signature_strength * 0.6)
 		* (1.0 - distance_ratio * 0.35)
 		* sensor.network_quality
-		* visibility,
+		* visibility
+		* (1.0 - jamming * 0.8),
 		0.0,
 		1.0
 	)
@@ -149,16 +162,54 @@ func _create_measurement(
 		maximum_error,
 		scan_time,
 		classification,
-		threat.id
+		threat.id,
+		{"interference_level": jamming, "signal_consistency": clampf(1.0 - jamming * 0.45, 0.0, 1.0)}
 	)
 	_next_measurement_id += 1
 	return measurement
+
+
+func _create_decoy_measurements(sensor: SensorState, definition: SensorDefinition, scan_time: float) -> Array[SensorMeasurement]:
+	var measurements: Array[SensorMeasurement] = []
+	if not _decoy_return_provider.is_valid():
+		return measurements
+	var returns: Array = _decoy_return_provider.call(sensor.id, definition.id, sensor.position, definition.detection_range, scan_time)
+	for return_data in returns:
+		var position: Vector2 = return_data.position
+		var jamming := _sample_jamming(definition.id, sensor.position, position, scan_time)
+		var error := float(return_data.position_error) * (1.0 + jamming * 2.0)
+		var classification := clampf(
+			definition.classification_strength * float(return_data.signature_strength) * sensor.network_quality * (1.0 - jamming * 0.8),
+			0.0,
+			1.0
+		)
+		var measurement := SensorMeasurement.new(
+			_next_measurement_id,
+			sensor.id,
+			position,
+			error,
+			scan_time,
+			classification,
+			StringName(return_data.source_id),
+			{"interference_level": jamming, "signal_consistency": float(return_data.signal_consistency)}
+		)
+		_next_measurement_id += 1
+		measurements.append(measurement)
+		_all_measurements.append(measurement)
+		measurement_created.emit(measurement)
+	return measurements
 
 
 func _sample_terrain_visibility(sensor_position: Vector2, threat_position: Vector2, sensor_height: float) -> float:
 	if not _terrain_visibility_sampler.is_valid():
 		return 1.0
 	return clampf(float(_terrain_visibility_sampler.call(sensor_position, threat_position, sensor_height)), 0.0, 1.0)
+
+
+func _sample_jamming(sensor_definition_id: StringName, sensor_position: Vector2, target_position: Vector2, scan_time: float) -> float:
+	if not _jamming_sampler.is_valid():
+		return 0.0
+	return clampf(float(_jamming_sampler.call(sensor_definition_id, sensor_position, target_position, scan_time)), 0.0, 1.0)
 
 
 func _get_threat_definition(definition_id: StringName) -> ThreatDefinition:
