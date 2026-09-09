@@ -53,3 +53,5 @@ const CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION := 1
 @export var engagement_profile: EngagementRuleProfile
 @export var mission_goals: Dictionary = {}
 @export var tutorial_steps: Array[Dictionary] = []
+
+@export var mission_events: Array[Dictionary] = []

@@ -11,6 +11,7 @@ const VALID_TUTORIAL_TRIGGERS: Array[StringName] = [
 	&"track_selected",
 	&"simulation_resumed",
 	&"mission_finished",
+	&"network_degraded",
 ]
 
 
@@ -51,6 +52,7 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 	if scenario.mission_duration <= 0.0:
 		errors.append("Scenario duration must be positive")
 	_validate_campaign_text(scenario, errors)
+	_validate_mission_events(scenario, errors)
 	if scenario.network_model_version != ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION:
 		errors.append("Network model version %d is incompatible; supported version is %d" % [scenario.network_model_version, ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION])
 	if scenario.electronic_warfare_model_version != ScenarioDefinition.CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION:
@@ -113,6 +115,20 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		errors.append_array(wave.get_validation_errors(definitions_by_id, scenario.world_size))
 	_validate_tutorial_steps(scenario.tutorial_steps, definitions_by_id, errors)
 	return errors
+
+
+func _validate_mission_events(scenario: ScenarioDefinition, errors: Array[String]) -> void:
+	var previous_time := -1.0
+	var connection_ids: Array = scenario.network_connections.map(func(c: Dictionary) -> String: return String(c.get("id", "")))
+	for event in scenario.mission_events:
+		var time := float(event.get("time", -1.0))
+		if not is_finite(time) or time < 0.0 or time < previous_time or time > scenario.mission_duration:
+			errors.append("Mission event has invalid time or order")
+		previous_time = time
+		if String(event.get("message", "")).strip_edges().is_empty():
+			errors.append("Mission event requires a player-facing message")
+		if event.has("connection_id") and (not connection_ids.has(String(event.connection_id)) or not event.get("enabled") is bool):
+			errors.append("Mission event references an invalid network connection or state")
 
 
 func _validate_campaign_text(scenario: ScenarioDefinition, errors: Array[String]) -> void:

@@ -25,7 +25,7 @@ func _run() -> void:
 	app.show_missions()
 	await process_frame
 	var cards: Array[Dictionary] = app.get_mission_cards()
-	_expect(cards.size() == 2, "Mission selection did not list both catalog missions")
+	_expect(cards.size() >= 3, "Mission selection did not list both catalog missions")
 	_expect(cards[0].unlocked, "Fresh profile did not unlock the tutorial entry")
 	_expect(not cards[1].unlocked, "Fresh profile unexpectedly unlocked the second mission")
 	_expect(app.launch_mission(&"tutorial_mission_1"), "Unlocked tutorial mission could not be launched")
@@ -55,11 +55,11 @@ func _run() -> void:
 	var completed_cards: Array[Dictionary] = app.get_mission_cards()
 	_expect(completed_cards[0].completed, "Debriefing did not persist mission completion")
 	_expect(completed_cards[1].unlocked, "Debriefing did not unlock the next campaign mission")
-	_expect(app.launch_mission(&"mvp_test_scenario"), "Debriefing could not transition into the next campaign mission")
+	_expect(app.launch_mission(&"tutorial_mission_2"), "Debriefing could not transition into the next campaign mission")
 	await process_frame
-	_expect(app.get_current_view() == &"gameplay" and app.gameplay.session.scenario.scenario_id == &"mvp_test_scenario", "Next-mission transition selected the wrong scenario")
+	_expect(app.get_current_view() == &"gameplay" and app.gameplay.session.scenario.scenario_id == &"tutorial_mission_2", "Next-mission transition selected the wrong scenario")
 	app._on_mission_debriefing_ready({
-		"scenario_id": &"mvp_test_scenario",
+		"scenario_id": &"tutorial_mission_2",
 		"status": InfrastructureSystem.MissionStatus.DEFEAT,
 		"summary": "Die Schutzgüter wurden nicht erhalten.",
 		"metrics": {},

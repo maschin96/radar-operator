@@ -36,6 +36,10 @@ func update_from_snapshot(snapshot: Dictionary) -> Dictionary:
 		&"track_detected":
 			if not (snapshot.get("tracks", []) as Array).is_empty():
 				return notify(&"track_detected")
+		&"network_degraded":
+			for connection in snapshot.get("network_connections", []):
+				if int(connection.get("status", 0)) != InfrastructureState.NetworkStatus.ONLINE:
+					return notify(&"network_degraded")
 		&"mission_finished":
 			if int(snapshot.get("phase", GameSession.Phase.PREPARATION)) == GameSession.Phase.ENDED:
 				return notify(&"mission_finished")

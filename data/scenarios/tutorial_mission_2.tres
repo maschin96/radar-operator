@@ -1,0 +1,115 @@
+[gd_resource type="Resource" script_class="ScenarioDefinition" load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/scenario_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/sensors/sensor_short_range.tres" id="2"]
+[ext_resource type="Resource" path="res://data/sensors/sensor_early_warning.tres" id="3"]
+[ext_resource type="Resource" path="res://data/defenses/defense_gun.tres" id="4"]
+[ext_resource type="Resource" path="res://data/defenses/defense_short_range.tres" id="5"]
+[ext_resource type="Resource" path="res://data/defenses/defense_medium_range.tres" id="6"]
+[ext_resource type="Resource" path="res://data/threats/threat_swift.tres" id="7"]
+[ext_resource type="Resource" path="res://data/threats/threat_low_signature.tres" id="8"]
+[ext_resource type="Resource" path="res://data/campaign/threat_network_training.tres" id="9"]
+[ext_resource type="Resource" path="res://data/infrastructure/infrastructure_command.tres" id="10"]
+[ext_resource type="Resource" path="res://data/infrastructure/infrastructure_power.tres" id="11"]
+[ext_resource type="Resource" path="res://data/infrastructure/infrastructure_factory.tres" id="12"]
+[ext_resource type="Resource" path="res://data/scenarios/tutorial_mission_2_wave.tres" id="13"]
+
+[ext_resource type="Resource" path="res://data/rules/standard.tres" id="rules"]
+
+[resource]
+script = ExtResource("1")
+engagement_profile = ExtResource("rules")
+scenario_id = &"tutorial_mission_2"
+display_name = "Tutorial Mission 2 – Dunkles Netz"
+summary = "Schützen Sie die Versorgung und lernen Sie, wie Netzverluste Ihr Lagebild und die Einsatzbereitschaft verändern."
+campaign_order = 2
+unlock_requires = PackedStringArray("tutorial_mission_1")
+expected_duration_minutes = 15
+learning_objectives = PackedStringArray("Sensorabdeckung planen", "Mehrere Schutzgüter priorisieren", "Missionsauswertung interpretieren")
+briefing = "Halten Sie das Kommandozentrum und mindestens ein weiteres Schutzgut. Ab T+45 wird die Energieverbindung zum Kommandozentrum für 25 Sekunden unterbrochen. Planen Sie Reserve und Schutzprioritäten. Sie dürfen die Zeit jederzeit anhalten."
+briefing_sections = Array[Dictionary]([{
+"id": &"mission", "title": "Auftrag", "body": "Erhalten Sie das Kommandozentrum und mindestens zwei der drei Schutzgüter."
+}, {
+"id": &"assets", "title": "Das Netz lesen", "body": "Das Kraftwerk liefert Energie, das Kommandozentrum Kommunikation. Wählen Sie die Netzebene und anschließend ein Schutzgut: Quelle, Reserve und Ausfallursache stehen rechts."
+}, {
+"id": &"constraints", "title": "Bewusst entscheiden", "body": "T+45 bis T+70: angekündigte Leitungsstörung. Reservebetrieb überbrückt nur kurz. Das Budget reicht nicht für lückenlosen Schutz aller Orte. Hohe Trackpriorität verändert die Reihenfolge; Freigabe erlaubt einen Einsatz, ersetzt aber weder Sensorik noch Reichweite."
+}])
+victory_debriefing = "Das Kommandozentrum und genügend Schutzgüter sind erhalten. Prüfen Sie die Zahl der Netzausfälle und Treffer: Breite Abdeckung und konzentrierter Schutz der Versorgung sind beide tragfähige Ansätze."
+defeat_debriefing = "Der Schutzauftrag wurde verfehlt. Prüfen Sie die Kette Kraftwerk → Energie → Kommandozentrum → Kommunikation. Priorität ersetzt keine Freigabe; eine Freigabe ersetzt keine Einsatzbereitschaft. Planen Sie den nächsten Versuch um die angekündigte Leitungsstörung."
+world_size = Vector2(2000, 1200)
+starting_budget = 2400
+seed = 20260913
+mission_duration = 300.0
+definitions = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12")])
+starting_entities = Array[Dictionary]([{
+"definition_id": &"infrastructure_command",
+"faction": &"player",
+"id": &"capital_command",
+"position": Vector2(1000, 610)
+}, {
+"definition_id": &"infrastructure_power",
+"faction": &"player",
+"id": &"north_power",
+"position": Vector2(520, 390)
+}, {
+"definition_id": &"infrastructure_factory",
+"faction": &"player",
+"id": &"east_factory",
+"position": Vector2(1510, 790)
+}])
+attack_waves = Array[Resource]([ExtResource("13")])
+placement_zones = Array[Rect2]([Rect2(80, 80, 1840, 1040)])
+blocked_zones = Array[Rect2]([Rect2(940, 550, 120, 120), Rect2(470, 340, 100, 100), Rect2(1460, 740, 100, 100)])
+network_connections = Array[Dictionary]([{
+"consumer_id": &"capital_command",
+"id": &"energy_power_command",
+"kind": &"energy",
+"reserve_duration": 10.0,
+"source_id": &"north_power"
+}, {
+"consumer_id": &"east_factory",
+"id": &"energy_power_factory",
+"kind": &"energy",
+"reserve_duration": 5.0,
+"source_id": &"north_power"
+}, {
+"consumer_id": &"north_power",
+"id": &"communication_command_power",
+"kind": &"communication",
+"reserve_duration": 6.0,
+"source_id": &"capital_command"
+}, {
+"consumer_id": &"east_factory",
+"id": &"communication_command_factory",
+"kind": &"communication",
+"reserve_duration": 4.0,
+"source_id": &"capital_command"
+}])
+mission_goals = {
+"minimum_survivors": 2,
+"required_survivors": PackedStringArray("capital_command")
+}
+mission_events = Array[Dictionary]([{
+"time": 1.0, "message": "NETZDIENST: Energie kommt vom Kraftwerk, Kommunikation vom Kommandozentrum. Beide Quellen verdienen Schutz."
+}, {
+"time": 40.0, "message": "NETZDIENST: In fünf Sekunden beginnt die angekündigte Leitungsstörung. Prüfen Sie Reserve und Schutzprioritäten."
+}, {
+"time": 45.0, "connection_id": &"energy_power_command", "enabled": false, "message": "NETZDIENST: Leitung zum Kommandozentrum unterbrochen. Reserven werden verbraucht; Sensor- und Abwehrbereitschaft können folgen."
+}, {
+"time": 70.0, "connection_id": &"energy_power_command", "enabled": true, "message": "NETZDIENST: Leitung wieder verbunden. Erst nach Wiederherstellung werden abhängige Systeme voll einsatzbereit."
+}, {
+"time": 150.0, "message": "LAGE: Neue Anfluggruppe. Priorität ordnet Kontakte; Freigabe erlaubt den Einsatz nur bei ausreichender Klassifikation und Bereitschaft."
+}])
+tutorial_steps = Array[Dictionary]([{
+"id": &"briefing", "title": "Dunkles Netz", "instruction": "Lesen Sie Auftrag und Störzeitpunkt, schließen Sie dann das Briefing.", "trigger": &"briefing_closed"
+}, {
+"id": &"inspect_network", "title": "Quellen und Abhängigkeiten", "instruction": "Klicken Sie ein Schutzgut an und lesen Sie rechts Energiequelle, Kommunikationsquelle und Reserve. Die Netzebene zeigt die Verbindungen.", "trigger": &"track_selected", "object_kind": &"infrastructure"
+}, {
+"id": &"start", "title": "Eine Schutzstrategie wählen", "instruction": "Stellen Sie Sensoren und Abwehr auf. Konzentrieren Sie Schutz auf das Netz oder decken Sie mehrere Anflüge ab. Starten Sie den Einsatz.", "trigger": &"mission_started"
+}, {
+"id": &"outage", "title": "Reserve ist endlich", "instruction": "Beobachten Sie den angekündigten Ausfall ab T+45. Die Simulation hält beim ersten degradierten Netz an.", "trigger": &"network_degraded", "pause_on_complete": true
+}, {
+"id": &"continue", "title": "Ausfall verstehen", "instruction": "Prüfen Sie die Netzursache. Graue Systeme können trotz Freigabe nicht handeln. Setzen Sie die Zeit fort; T+70 wird die Leitung wieder verbunden.", "trigger": &"simulation_resumed", "minimum_scale": 1.0
+}, {
+"id": &"finish", "title": "Priorisieren und auswerten", "instruction": "Passen Sie Schutzpriorität oder Trackfreigabe bei Bedarf an. Erhalten Sie Kommandozentrum und mindestens ein weiteres Schutzgut bis T+05:00.", "trigger": &"mission_finished"
+}])
