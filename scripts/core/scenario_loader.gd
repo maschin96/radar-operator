@@ -52,6 +52,8 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		errors.append("Scenario duration must be positive")
 	if scenario.network_model_version != ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION:
 		errors.append("Network model version %d is incompatible; supported version is %d" % [scenario.network_model_version, ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION])
+	if scenario.electronic_warfare_model_version != ScenarioDefinition.CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION:
+		errors.append("Electronic warfare model version %d is incompatible; supported version is %d" % [scenario.electronic_warfare_model_version, ScenarioDefinition.CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION])
 	_validate_terrain(scenario, errors)
 	for zone in scenario.placement_zones:
 		if zone.size.x <= 0.0 or zone.size.y <= 0.0:
@@ -75,6 +77,7 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		else:
 			definitions_by_id[definition.id] = definition
 		errors.append_array(definition.get_validation_errors())
+	_validate_electronic_warfare(scenario, definitions_by_id, errors)
 
 	var entity_ids: Dictionary = {}
 	for entity_data in scenario.starting_entities:
@@ -161,6 +164,68 @@ func _validate_terrain_area(data: Dictionary, world_bounds: Rect2, label: String
 	var visibility_factor := float(data.get("visibility_factor", 1.0))
 	if visibility_factor < 0.0 or visibility_factor > 1.0:
 		errors.append("%s visibility factor must be between 0 and 1" % label)
+
+
+func _validate_electronic_warfare(scenario: ScenarioDefinition, definitions_by_id: Dictionary, errors: Array[String]) -> void:
+	var ids: Dictionary = {}
+	var world_bounds := Rect2(Vector2.ZERO, scenario.world_size)
+	for zone in scenario.jamming_zones:
+		var id := StringName(zone.get("id", ""))
+		_validate_electronic_warfare_id(id, ids, "Jamming zone", errors)
+		var area: Variant = zone.get("area")
+		if not area is Rect2 or area.size.x <= 0.0 or area.size.y <= 0.0 or not world_bounds.encloses(area):
+			errors.append("Jamming zone '%s' has an invalid area" % id)
+		var strength := float(zone.get("strength", -1.0))
+		if strength < 0.0 or strength > 1.0:
+			errors.append("Jamming zone '%s' has invalid strength" % id)
+		_validate_strength_curve(zone.get("strength_curve", []), "Jamming zone '%s'" % id, errors)
+		_validate_affected_sensors(zone, definitions_by_id, "Jamming zone '%s'" % id, errors)
+	for decoy in scenario.decoy_emitters:
+		var id := StringName(decoy.get("id", ""))
+		_validate_electronic_warfare_id(id, ids, "Decoy emitter", errors)
+		var start_time := float(decoy.get("start_time", -1.0))
+		var end_time := float(decoy.get("end_time", -1.0))
+		if start_time < 0.0 or end_time <= start_time or float(decoy.get("measurement_interval", 0.0)) <= 0.0:
+			errors.append("Decoy emitter '%s' has invalid timing" % id)
+		var route: Variant = decoy.get("route")
+		if not route is PackedVector2Array or route.size() < 2:
+			errors.append("Decoy emitter '%s' requires at least two route points" % id)
+		else:
+			for point in route:
+				if not world_bounds.has_point(point):
+					errors.append("Decoy emitter '%s' has a route point outside the map" % id)
+					break
+		for field in ["signature_strength", "signal_consistency"]:
+			var value := float(decoy.get(field, -1.0))
+			if value < 0.0 or value > 1.0:
+				errors.append("Decoy emitter '%s' has invalid %s" % [id, field])
+		if float(decoy.get("position_error", -1.0)) < 0.0:
+			errors.append("Decoy emitter '%s' has negative position error" % id)
+		_validate_affected_sensors(decoy, definitions_by_id, "Decoy emitter '%s'" % id, errors)
+
+
+func _validate_electronic_warfare_id(id: StringName, ids: Dictionary, label: String, errors: Array[String]) -> void:
+	if id.is_empty() or ids.has(id):
+		errors.append("%s has an empty or duplicate id '%s'" % [label, id])
+	ids[id] = true
+
+
+func _validate_strength_curve(curve: Array, label: String, errors: Array[String]) -> void:
+	var previous_time := -1.0
+	for point in curve:
+		var time := float(point.get("time", -1.0))
+		var strength := float(point.get("strength", -1.0))
+		if time < 0.0 or time <= previous_time or strength < 0.0 or strength > 1.0:
+			errors.append("%s has an invalid strength curve" % label)
+			return
+		previous_time = time
+
+
+func _validate_affected_sensors(data: Dictionary, definitions_by_id: Dictionary, label: String, errors: Array[String]) -> void:
+	for definition_id in data.get("affected_sensor_ids", PackedStringArray()):
+		var definition := definitions_by_id.get(StringName(definition_id)) as EntityDefinition
+		if not definition is SensorDefinition:
+			errors.append("%s references unknown sensor '%s'" % [label, definition_id])
 
 
 func _validate_tutorial_steps(

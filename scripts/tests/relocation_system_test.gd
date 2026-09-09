@@ -11,6 +11,8 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	_test_narrow_obstacles_and_disconnected_build_zones()
+	_test_failed_systems_and_reserved_targets()
 	_test_rejections_and_route_validation()
 	_test_relocation_lifecycle_and_network_lockout()
 	_test_mobile_defense_uses_shared_state_and_lockout()
@@ -24,7 +26,7 @@ func _run() -> void:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("RELOCATION SYSTEM TESTS PASSED: 7 test cases")
+	print("RELOCATION SYSTEM TESTS PASSED: 9 test cases")
 	quit(0)
 
 
@@ -104,7 +106,7 @@ func _test_system_failure_aborts_relocation() -> void:
 	var session := _new_session()
 	var sensor := session.placement.get_placement(&"placed_0001") as SensorState
 	_expect(session.relocate_system(sensor.id, Vector2(700.0, 200.0)).success, "Failure test relocation was rejected")
-	sensor.active = false
+	sensor.damage = 1.0
 	_advance(session, GameSession.TICK_DURATION)
 	_expect(sensor.mobility_status == EntityState.MobilityStatus.STATIONARY, "Failed system retained a running relocation")
 	_expect(not sensor.powered and not sensor.operational, "Failed relocating system appeared operational")
@@ -144,6 +146,39 @@ func _test_save_load_in_every_relocation_phase() -> void:
 		_expect(loaded.success, "Relocation phase could not be restored: " + str(loaded.get("errors", [])))
 		if loaded.success:
 			_expect(manager.snapshots_match(session.get_persistence_snapshot(), loaded.session.get_persistence_snapshot()), "Relocation phase changed after deterministic restore")
+			for tick in 120:
+				session.advance(GameSession.TICK_DURATION)
+				loaded.session.advance(GameSession.TICK_DURATION)
+			_expect(manager.snapshots_match(session.get_persistence_snapshot(), loaded.session.get_persistence_snapshot()), "Relocation continuation diverged after load")
+			_expect(session.events == loaded.session.events and session.replay_frames == loaded.session.replay_frames, "Relocation replay or events diverged after load")
+
+
+func _test_narrow_obstacles_and_disconnected_build_zones() -> void:
+	var scenario := ScenarioLoader.new().load_scenario(SCENARIO_PATH).scenario as ScenarioDefinition
+	scenario = scenario.duplicate(true)
+	scenario.blocked_zones = [Rect2(249.0, 0.0, 2.0, 1200.0)]
+	var system := RelocationSystem.new()
+	system.configure(scenario)
+	var entity := SensorState.new(&"mobile", &"sensor_short_range", Vector2(220.0, 200.0))
+	var preview := system.preview_relocation(entity, Vector2(280.0, 200.0), [entity], &"running", 100)
+	_expect(not preview.success and preview.reasons.has("route_blocked"), "Route crossed a two-unit obstacle between grid centers")
+	scenario.blocked_zones.clear()
+	scenario.placement_zones = [Rect2(80.0, 80.0, 160.0, 400.0), Rect2(260.0, 80.0, 400.0, 400.0)]
+	system.configure(scenario)
+	preview = system.preview_relocation(entity, Vector2(280.0, 200.0), [entity], &"running", 100)
+	_expect(not preview.success and preview.reasons.has("route_blocked"), "Route crossed the gap between disconnected build zones")
+
+
+func _test_failed_systems_and_reserved_targets() -> void:
+	var session := _new_session()
+	var sensor := session.placement.get_placement(&"placed_0001")
+	sensor.damage = 1.0
+	var result := session.relocate_system(sensor.id, Vector2(700.0, 300.0))
+	_expect(not result.success and result.reasons.has("system_failed"), "Destroyed system accepted a relocation")
+	sensor.damage = 0.0
+	_expect(session.relocate_system(sensor.id, Vector2(700.0, 300.0)).success, "Target reservation fixture failed")
+	result = session.relocate_system(&"placed_0002", Vector2(710.0, 300.0))
+	_expect(not result.success and result.reasons.has("target_reserved"), "Two relocating systems reserved overlapping targets")
 
 
 func _new_session(use_mobile_defense: bool = true) -> GameSession:

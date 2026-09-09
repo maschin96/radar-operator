@@ -29,6 +29,8 @@ Ungültige Kosten, Geschwindigkeiten, Zeiten oder Phasennamen werden beim Laden 
 
 ## Determinismus, Save und Replay
 
-Verlege- und Abbruchbefehle werden mit Simulations-Tick und Zielposition im Befehlsprotokoll gespeichert. Ausgangsposition, Route, Phase, Wegindex, Ziel und Restzeit sind Teil des Zustands. Spielstände verwenden deshalb Formatversion 4. Beim Laden wird die Sitzung aus der unveränderlichen ursprünglichen Aufstellung und dem Befehlsprotokoll rekonstruiert.
+Verlege- und Abbruchbefehle werden mit Simulations-Tick und Zielposition im Befehlsprotokoll gespeichert. Ausgangsposition, Route, Phase, Wegindex, Ziel und Restzeit sind Teil des Zustands. Spielstände verwenden deshalb Formatversion 5. Beim Laden wird die Sitzung aus der unveränderlichen ursprünglichen Aufstellung und dem Befehlsprotokoll rekonstruiert.
 
 Replay-Frames enthalten die vollständigen Systemzustände und können dadurch Abbau, Fahrt und Aufbau darstellen. Automatisierte Tests prüfen Routen und Sperrzonen, Kosten, Sensor- und Abwehrsperre, Abbruch, Ausfall, Abschluss sowie Save/Load in allen drei Phasen.
+
+Die Route wird über vollständige Wegsegmente gegen Sperrflächen und zusammenhängende Bauzonen geprüft. Schmale Sperren zwischen Rasterpunkten können nicht übersprungen werden. Ziele laufender Verlegungen sind für andere Systeme mit Mindestabstand reserviert; ausgefallene Systeme lehnen neue Verlegebefehle ab.

@@ -8,6 +8,7 @@ var position_error_radius: float
 var timestamp: float
 var classification_evidence: float
 var debug_source_entity_id: StringName
+var quality_indicators: Dictionary = {}
 
 
 func _init(
@@ -17,7 +18,8 @@ func _init(
 	error_radius: float,
 	measurement_timestamp: float,
 	classification: float,
-	source_entity_id: StringName
+	source_entity_id: StringName,
+	indicators: Dictionary = {}
 ) -> void:
 	id = measurement_id
 	sensor_id = measurement_sensor_id
@@ -26,6 +28,7 @@ func _init(
 	timestamp = measurement_timestamp
 	classification_evidence = classification
 	debug_source_entity_id = source_entity_id
+	quality_indicators = indicators.duplicate(true)
 
 
 func to_player_dictionary() -> Dictionary:
@@ -39,4 +42,5 @@ func to_player_dictionary() -> Dictionary:
 		"position_error_radius": position_error_radius,
 		"timestamp": timestamp,
 		"classification_evidence": classification_evidence,
+		"quality_indicators": quality_indicators.duplicate(true),
 	}

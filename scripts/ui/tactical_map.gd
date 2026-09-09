@@ -19,6 +19,7 @@ const LAYER_TRACKS := &"tracks"
 const LAYER_RANGES := &"ranges"
 const LAYER_NETWORK := &"network"
 const LAYER_TERRAIN_DEBUG := &"terrain_debug"
+const LAYER_ELECTRONIC_WARFARE := &"electronic_warfare"
 const LAYER_SELECTION := &"selection"
 
 @export var world_size := Vector2(2000.0, 1200.0):
@@ -38,6 +39,8 @@ var _placement_zones: Array[Rect2] = []
 var _blocked_zones: Array[Rect2] = []
 var _terrain_zones: Array = []
 var _visibility_blockers: Array = []
+var _jamming_zones: Array = []
+var _electronic_warfare_state: Dictionary = {}
 var _visibility_preview: Dictionary = {}
 var _preview_position := Vector2.ZERO
 var _preview_range: float = 0.0
@@ -56,6 +59,7 @@ var _layers: Dictionary = {
 	LAYER_RANGES: true,
 	LAYER_NETWORK: true,
 	LAYER_TERRAIN_DEBUG: false,
+	LAYER_ELECTRONIC_WARFARE: true,
 	LAYER_SELECTION: true,
 }
 
@@ -151,20 +155,22 @@ func get_debug_text() -> String:
 	]
 
 
-func set_world_state(infrastructure_states: Array, placement_states: Array, track_states: Array, network_connections: Array = []) -> void:
+func set_world_state(infrastructure_states: Array, placement_states: Array, track_states: Array, network_connections: Array = [], electronic_warfare_state: Dictionary = {}) -> void:
 	_infrastructure_states = infrastructure_states
 	_placement_states = placement_states
 	_track_states = track_states
 	_network_connections = network_connections
+	_electronic_warfare_state = electronic_warfare_state.duplicate(true)
 	queue_redraw()
 
 
-func set_mission_geometry(new_world_size: Vector2, placement_zones: Array[Rect2], blocked_zones: Array[Rect2], terrain_zones: Array = [], visibility_blockers: Array = []) -> void:
+func set_mission_geometry(new_world_size: Vector2, placement_zones: Array[Rect2], blocked_zones: Array[Rect2], terrain_zones: Array = [], visibility_blockers: Array = [], jamming_zones: Array = []) -> void:
 	world_size = new_world_size
 	_placement_zones = placement_zones.duplicate()
 	_blocked_zones = blocked_zones.duplicate()
 	_terrain_zones = terrain_zones.duplicate(true)
 	_visibility_blockers = visibility_blockers.duplicate(true)
+	_jamming_zones = jamming_zones.duplicate(true)
 	set_camera(new_world_size * 0.5, zoom_level)
 	queue_redraw()
 
@@ -216,6 +222,8 @@ func _draw() -> void:
 	if is_layer_visible(LAYER_NETWORK):
 		_draw_network()
 	_draw_relocations()
+	if is_layer_visible(LAYER_ELECTRONIC_WARFARE):
+		_draw_electronic_warfare()
 	if is_layer_visible(LAYER_INFRASTRUCTURE):
 		_draw_infrastructure()
 	if is_layer_visible(LAYER_SYSTEMS):
@@ -315,6 +323,18 @@ func _draw_terrain_debug() -> void:
 		draw_rect(rect, Color("e56b59"), false, 2.0)
 
 
+func _draw_electronic_warfare() -> void:
+	var levels: Dictionary = _electronic_warfare_state.get("zone_levels", {})
+	for zone in _jamming_zones:
+		var level := float(levels.get(String(zone.get("id", "")), 0.0))
+		if level <= 0.0:
+			continue
+		var rect := Rect2(world_to_screen(zone.area.position), zone.area.size * zoom_level)
+		draw_rect(rect, Color(0.67, 0.30, 0.82, 0.08 + level * 0.16), true)
+		draw_dashed_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color("c88be3"), 2.0, 8.0)
+		draw_string(ThemeDB.fallback_font, rect.position + Vector2(6.0, 17.0), "INTERFERENZ %.0f%%" % (level * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("e0b3f2"))
+
+
 func _draw_infrastructure() -> void:
 	for state in _infrastructure_states:
 		var color := Color("f0c86a") if state.active else Color("77463f")
@@ -378,7 +398,11 @@ func _draw_tracks() -> void:
 		var color := Color("ff5d4a") if track.classification == &"hostile" else Color("8fffd1")
 		if not high_contrast:
 			color = Color("f16e58") if track.classification == &"hostile" else Color("78d5b1")
+		if track.possible_deception:
+			color = Color("efb94c")
 		var marker := ["", "!", "!!"][track.priority] as String
+		if track.possible_deception:
+			marker += " ?"
 		marker += ["", " FREI", " GESPERRT"][track.release_status]
 		draw_string(ThemeDB.fallback_font, position + Vector2(12, -12), String(track.id) + " " + marker, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
 		draw_circle(position, radius, Color(color, 0.10))

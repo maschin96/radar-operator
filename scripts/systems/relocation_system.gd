@@ -37,6 +37,8 @@ func preview_relocation(entity: EntityState, target: Vector2, placements: Array,
 	var definition := _definitions.get(entity.definition_id) as EntityDefinition
 	if definition == null:
 		return {"success": false, "reasons": ["unknown_definition"]}
+	if not entity.active or entity.damage >= 1.0:
+		reasons.append("system_failed")
 	if not definition.mobile:
 		reasons.append("not_mobile")
 	if entity.mobility_status != EntityState.MobilityStatus.STATIONARY:
@@ -52,7 +54,12 @@ func preview_relocation(entity: EntityState, target: Vector2, placements: Array,
 	if _is_blocked(target):
 		reasons.append("blocked_zone")
 	for other in placements:
-		if other.id != entity.id and other.position.distance_to(target) < MINIMUM_SPACING:
+		if other.id == entity.id:
+			continue
+		if other.mobility_status != EntityState.MobilityStatus.STATIONARY and other.relocation_target.distance_to(target) < MINIMUM_SPACING:
+			reasons.append("target_reserved")
+			break
+		if other.position.distance_to(target) < MINIMUM_SPACING:
 			reasons.append("too_close_to_system")
 			break
 	var path := PackedVector2Array()
@@ -203,7 +210,11 @@ func _build_route(origin: Vector2, target: Vector2) -> PackedVector2Array:
 		for x in width:
 			var cell := Vector2i(x, y)
 			var center := grid.offset + Vector2(cell) * grid.cell_size
-			if _is_blocked(center):
+			var cell_area := Rect2(center - grid.cell_size * 0.5, grid.cell_size)
+			var blocked := not _world_bounds.has_point(center) or not _is_in_allowed_zone(center)
+			for zone in _blocked_zones:
+				blocked = blocked or cell_area.intersects(zone, true)
+			if blocked:
 				grid.set_point_solid(cell, true)
 	var start := Vector2i(floori(origin.x / _cell_size), floori(origin.y / _cell_size))
 	var finish := Vector2i(floori(target.x / _cell_size), floori(target.y / _cell_size))
@@ -218,7 +229,45 @@ func _build_route(origin: Vector2, target: Vector2) -> PackedVector2Array:
 	for index in range(1, grid_path.size() - 1):
 		result.append(grid_path[index])
 	result.append(target)
+	for index in range(1, result.size()):
+		if not _segment_is_allowed(result[index - 1], result[index]):
+			return PackedVector2Array()
 	return result
+
+
+# Clip complete segments so narrow obstacles between raster points cannot be skipped.
+func _segment_rect_interval(start: Vector2, finish: Vector2, area: Rect2) -> Vector2:
+	var interval := Vector2(0.0, 1.0)
+	var direction := finish - start
+	for axis in 2:
+		if absf(direction[axis]) <= EPSILON:
+			if start[axis] < area.position[axis] or start[axis] > area.end[axis]:
+				return Vector2(1.0, -1.0)
+		else:
+			var first := (area.position[axis] - start[axis]) / direction[axis]
+			var last := (area.end[axis] - start[axis]) / direction[axis]
+			interval.x = maxf(interval.x, minf(first, last))
+			interval.y = minf(interval.y, maxf(first, last))
+	return interval
+
+
+func _segment_is_allowed(start: Vector2, finish: Vector2) -> bool:
+	for zone in _blocked_zones:
+		var interval := _segment_rect_interval(start, finish, zone)
+		if interval.x <= interval.y:
+			return false
+	var intervals: Array[Vector2] = []
+	for zone in _placement_zones:
+		var interval := _segment_rect_interval(start, finish, zone)
+		if interval.x <= interval.y:
+			intervals.append(interval)
+	intervals.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.x < b.x)
+	var covered := 0.0
+	for interval in intervals:
+		if interval.x > covered + EPSILON:
+			return false
+		covered = maxf(covered, interval.y)
+	return covered >= 1.0 - EPSILON
 
 
 func _remaining_path_distance(entity: EntityState) -> float:

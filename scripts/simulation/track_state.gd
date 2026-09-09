@@ -26,6 +26,10 @@ var last_update_summary: Dictionary = {}
 var priority: Priority = Priority.NORMAL
 var priority_reason: String = ""
 var release_status: ReleaseStatus = ReleaseStatus.DEFAULT
+var interference_level: float = 0.0
+var signal_consistency: float = 1.0
+var possible_deception: bool = false
+var evidence_notes: PackedStringArray = PackedStringArray()
 
 
 func _init(
@@ -74,4 +78,8 @@ func to_player_dictionary() -> Dictionary:
 		"priority": priority,
 		"priority_reason": priority_reason,
 		"release_status": release_status,
+		"interference_level": interference_level,
+		"signal_consistency": signal_consistency,
+		"possible_deception": possible_deception,
+		"evidence_notes": Array(evidence_notes),
 	}
