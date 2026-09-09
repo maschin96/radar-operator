@@ -34,6 +34,9 @@ func build_from_scenarios(source_scenarios: Array[ScenarioDefinition]) -> Dictio
 	scenarios.clear()
 	errors.clear()
 	_by_id.clear()
+	if source_scenarios.is_empty():
+		errors.append("Der Inhaltskatalog enthält keine Missionen.")
+		return _result()
 	var loader := ScenarioLoaderScript.new()
 	var campaign_orders: Dictionary = {}
 	for scenario in source_scenarios:
@@ -55,6 +58,8 @@ func build_from_scenarios(source_scenarios: Array[ScenarioDefinition]) -> Dictio
 		for required_id in scenario.unlock_requires:
 			if not _by_id.has(StringName(required_id)):
 				errors.append("Scenario '%s' unlock references missing scenario '%s'" % [scenario.scenario_id, required_id])
+			elif (_by_id[StringName(required_id)] as ScenarioDefinition).campaign_order >= scenario.campaign_order:
+				errors.append("Scenario '%s' prerequisite '%s' must be an earlier campaign mission" % [scenario.scenario_id, required_id])
 	if not errors.is_empty():
 		return _result()
 	scenarios.assign(source_scenarios)

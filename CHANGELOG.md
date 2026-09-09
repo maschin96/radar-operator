@@ -6,6 +6,9 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ### Hinzugefügt
 
+- strukturierte, validierte Briefingabschnitte und missionsspezifische Sieg-/Niederlagentexte in den Szenariodaten
+- eigene Debriefing-Ansicht mit Ergebniskennzahlen sowie Übergängen zu Wiederholung, Folgemission, Missionsübersicht und Hauptmenü
+- Kampagnenübersicht mit Gesamtfortschritt und bestem Ergebnis je Mission sowie automatisierter Vier-Missionen-Freischaltprüfung
 - versioniertes Energie- und Kommunikationsgraphmodell mit Online-, Notbetrieb-, Degradiert- und Offline-Zuständen
 - automatische Netzanbindung platzierter Sensor- und Abwehrsysteme mit zeitlich abgestuften Reserve- und Wiederherstellungseffekten
 - schaltbare Kartenebene sowie Quellen-, Reserve- und Ursachenanzeige in den Lagedetails

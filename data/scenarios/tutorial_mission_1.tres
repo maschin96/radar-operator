@@ -19,6 +19,21 @@ campaign_order = 1
 expected_duration_minutes = 10
 learning_objectives = PackedStringArray("Sensor und Abwehr platzieren", "Tracks lesen", "Simulationszeit steuern")
 briefing = "Willkommen in der Wachschicht. Ein einzelner, deutlich erfassbarer Übungskontakt wird das Kraftwerk anfliegen. Bauen Sie ein einfaches Sensornetz und sichern Sie das Ziel mit einem Kurzstreckensystem. Der Kontakt wird automatisch bekämpft, sobald er ausreichend klassifiziert und in Reichweite ist; ein direkter Schussbefehl ist nicht nötig."
+briefing_sections = Array[Dictionary]([{
+"body": "Schützen Sie das Kraftwerk bis zum Ende der Übung.",
+"id": &"mission",
+"title": "Auftrag"
+}, {
+"body": "Das Kraftwerk ist das einzige Schutzgut und muss erhalten bleiben.",
+"id": &"assets",
+"title": "Schutzgut"
+}, {
+"body": "Das Budget reicht für einen Frühwarnsensor und ein Kurzstreckensystem. Der Kontakt wird nach sicherer Klassifikation automatisch bekämpft.",
+"id": &"constraints",
+"title": "Einschränkungen und neue Mechanik"
+}])
+victory_debriefing = "Das Kraftwerk blieb betriebsbereit. Sensorabdeckung und Abwehrreichweite waren ausreichend aufeinander abgestimmt."
+defeat_debriefing = "Das Kraftwerk wurde nicht gehalten. Prüfen Sie im nächsten Versuch besonders die Überlappung von Sensor- und Abwehrreichweite."
 world_size = Vector2(2000, 1200)
 starting_budget = 1200
 seed = 10101

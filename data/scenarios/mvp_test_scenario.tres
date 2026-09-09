@@ -27,6 +27,21 @@ unlock_requires = PackedStringArray("tutorial_mission_1")
 expected_duration_minutes = 15
 learning_objectives = PackedStringArray("Sensorabdeckung planen", "Mehrere Schutzgüter priorisieren", "Missionsauswertung interpretieren")
 briefing = "Schützen Sie das Kommandozentrum, das Kraftwerk und die Fabrik vor der ersten Angriffswelle."
+briefing_sections = Array[Dictionary]([{
+"body": "Halten Sie die kritische Infrastruktur gegen eine gemischte Angriffswelle.",
+"id": &"mission",
+"title": "Auftrag"
+}, {
+"body": "Das Kommandozentrum muss überleben; insgesamt müssen mindestens zwei der drei Schutzgüter erhalten bleiben.",
+"id": &"assets",
+"title": "Schutzgüter"
+}, {
+"body": "Planen Sie Radarüberdeckung, begrenzte Abwehrressourcen und die Abhängigkeiten des Energie- und Kommunikationsnetzes gemeinsam.",
+"id": &"constraints",
+"title": "Einschränkungen und Mechaniken"
+}])
+victory_debriefing = "Der Verbund hielt stand. Vergleichen Sie Schutzprioritäten, Munitionsverbrauch und Reaktionszeiten für eine noch robustere Aufstellung."
+defeat_debriefing = "Die Schutzvorgaben wurden verfehlt. Die Auswertung zeigt, an welcher Stelle Erfassung, Freigabe oder Netzversorgung abgerissen sind."
 world_size = Vector2(2000, 1200)
 starting_budget = 2500
 seed = 20260826

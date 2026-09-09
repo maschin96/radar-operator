@@ -24,6 +24,8 @@ func _run() -> void:
 	_test_entity_state_roundtrip()
 	_test_mission_rule_profile()
 	_test_network_graph_validation()
+	_test_invalid_campaign_catalogs()
+	_test_campaign_text_validation()
 	_test_mobility_profile_validation()
 	_test_electronic_warfare_validation()
 
@@ -32,7 +34,7 @@ func _run() -> void:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("SCENARIO DATA TESTS PASSED: 11 test cases")
+	print("SCENARIO DATA TESTS PASSED: 13 test cases")
 	quit(0)
 
 
@@ -113,6 +115,9 @@ func _minimal_scenario() -> Variant:
 	scenario.scenario_id = &"validation_test"
 	scenario.display_name = "Validation Test"
 	scenario.summary = "Minimal valid scenario used by data validation tests."
+	scenario.briefing = "Validate the scenario."
+	scenario.victory_debriefing = "Validation succeeded."
+	scenario.defeat_debriefing = "Validation failed."
 	scenario.learning_objectives = PackedStringArray(["Validate scenario data"])
 	scenario.world_size = Vector2(100.0, 100.0)
 	scenario.starting_budget = 1
@@ -158,6 +163,14 @@ func _test_network_graph_validation() -> void:
 	_expect(_contains_text(errors, "missing source"), "Missing network source was not rejected")
 
 
+func _test_campaign_text_validation() -> void:
+	var scenario: ScenarioDefinition = load(SCENARIO_PATH).duplicate(true)
+	_expect(scenario.briefing_sections.size() == 3, "Scenario does not expose structured briefing sections")
+	scenario.briefing_sections.append({"id": &"mission", "title": "Duplicate", "body": "Invalid"})
+	var errors := ScenarioLoader.new().validate_scenario(scenario)
+	_expect(_contains_text(errors, "duplicate section id"), "Duplicate briefing section id was not rejected")
+
+
 func _test_mobility_profile_validation() -> void:
 	var scenario: ScenarioDefinition = load(SCENARIO_PATH).duplicate(true)
 	var mobile_definition: EntityDefinition
@@ -183,6 +196,20 @@ func _test_electronic_warfare_validation() -> void:
 	errors = ScenarioLoader.new().validate_scenario(scenario)
 	_expect(_contains_text(errors, "invalid strength curve"), "Invalid jamming time curve was not rejected")
 	_expect(_contains_text(errors, "unknown sensor"), "Unknown decoy sensor reference was not rejected")
+
+
+func _test_invalid_campaign_catalogs() -> void:
+	var catalog := ScenarioCatalog.new()
+	var result := catalog.build_from_scenarios([])
+	_expect(not result.success and _contains_text(result.errors, "keine Missionen"), "Empty campaign was accepted")
+	var first := (load("res://data/scenarios/tutorial_mission_1.tres") as ScenarioDefinition).duplicate(true) as ScenarioDefinition
+	var second := (load(SCENARIO_PATH) as ScenarioDefinition).duplicate(true) as ScenarioDefinition
+	first.unlock_requires = PackedStringArray([String(second.scenario_id)])
+	result = catalog.build_from_scenarios([first, second])
+	_expect(not result.success and _contains_text(result.errors, "earlier campaign mission"), "Cyclic campaign prerequisites were accepted")
+	first.unlock_requires = PackedStringArray(["missing_campaign_mission"])
+	result = catalog.build_from_scenarios([first, second])
+	_expect(not result.success and _contains_text(result.errors, "missing scenario"), "Missing campaign prerequisite was accepted")
 
 
 func _expect(condition: bool, message: String) -> void:

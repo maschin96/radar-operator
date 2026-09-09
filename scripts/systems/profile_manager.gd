@@ -61,7 +61,11 @@ func record_mission_result(scenario_id: StringName, status: int, catalog: Varian
 	profile["last_played_mission"] = id_text
 	var best_results: Dictionary = profile.get("best_results", {})
 	var previous_status := int(best_results.get(id_text, -1))
-	best_results[id_text] = maxi(previous_status, status)
+	best_results[id_text] = (
+		InfrastructureSystem.MissionStatus.VICTORY
+		if previous_status == InfrastructureSystem.MissionStatus.VICTORY or status == InfrastructureSystem.MissionStatus.VICTORY
+		else status
+	)
 	profile["best_results"] = best_results
 	if status != InfrastructureSystem.MissionStatus.VICTORY:
 		return false
@@ -95,6 +99,28 @@ func is_unlocked(scenario_id: StringName) -> bool:
 
 func is_completed(scenario_id: StringName) -> bool:
 	return profile.get("completed_missions", []).has(String(scenario_id))
+
+
+func get_mission_result(scenario_id: StringName) -> int:
+	return int((profile.get("best_results", {}) as Dictionary).get(String(scenario_id), -1))
+
+
+func get_campaign_progress(catalog: Variant) -> Dictionary:
+	var completed := 0
+	for scenario in catalog.scenarios:
+		if is_completed(scenario.scenario_id):
+			completed += 1
+	return {"completed": completed, "total": catalog.scenarios.size()}
+
+
+func get_next_unlocked_scenario(scenario_id: StringName, catalog: Variant) -> ScenarioDefinition:
+	var current: ScenarioDefinition = catalog.get_scenario(scenario_id)
+	if current == null:
+		return null
+	for scenario in catalog.scenarios:
+		if scenario.campaign_order > current.campaign_order and is_unlocked(scenario.scenario_id):
+			return scenario
+	return null
 
 
 func reset(catalog: Variant, confirmed: bool) -> Dictionary:
