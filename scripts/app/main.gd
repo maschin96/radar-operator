@@ -87,6 +87,7 @@ func _ready() -> void:
 	%ReducedEffects.toggled.connect(_on_accessibility_changed)
 	%NetworkLayer.toggled.connect(func(visible: bool) -> void: _map.set_layer_visible(TacticalMap.LAYER_NETWORK, visible))
 	%TerrainDebug.toggled.connect(func(visible: bool) -> void: _map.set_layer_visible(TacticalMap.LAYER_TERRAIN_DEBUG, visible))
+	%ElectronicWarfareLayer.toggled.connect(func(visible: bool) -> void: _map.set_layer_visible(TacticalMap.LAYER_ELECTRONIC_WARFARE, visible))
 	%AlertsEnabled.toggled.connect(func(enabled: bool) -> void: _audio.alerts_enabled = enabled)
 	%MainMenu.pressed.connect(func() -> void: request_main_menu.emit())
 	%TrackPriority.pressed.connect(_cycle_track_priority)
@@ -253,7 +254,7 @@ func _refresh_ui() -> void:
 	_start_button.disabled = snapshot.phase != GameSession.Phase.PREPARATION
 	for button in _catalog_buttons.values():
 		button.disabled = snapshot.phase != GameSession.Phase.PREPARATION
-	_map.set_world_state(snapshot.infrastructure, snapshot.placements, snapshot.tracks, snapshot.network_connections)
+	_map.set_world_state(snapshot.infrastructure, snapshot.placements, snapshot.tracks, snapshot.network_connections, snapshot.electronic_warfare)
 	_refresh_details(snapshot)
 	_update_tutorial_from_snapshot(snapshot)
 
@@ -302,6 +303,11 @@ func _refresh_details(snapshot: Dictionary) -> void:
 			_set_track_controls_visible(true)
 			%TrackPriority.text = "PRIORITÄT: %s" % ["NORMAL", "HOCH", "KRITISCH"][object.priority]
 			_details.text = "[b]%s[/b]\nKlassifikation: %s\nKonfidenz: %.0f%%\nUnsicherheit: %.1f\nMessungen: %d\nSensoren: %d\nPriorität: %s\nFreigabe: %s\n\nLetzte Fusion:\n%s" % [object.id, object.classification, object.classification_confidence * 100.0, object.uncertainty_radius, object.measurement_count, object.reporting_sensors.size(), ["NORMAL", "HOCH", "KRITISCH"][object.priority], ["Profilregeln", "Freigegeben", "Gesperrt"][object.release_status], str(object.last_update_summary)]
+			_details.text += "\nSignal-Konsistenz: %.0f%% · Interferenz: %.0f%%" % [object.signal_consistency * 100.0, object.interference_level * 100.0]
+			if object.possible_deception:
+				_details.text += "\n[color=#efb94c]MÖGLICHE TÄUSCHUNG – anhand der Messindizien prüfen[/color]"
+			for note in object.evidence_notes:
+				_details.text += "\n• " + note
 			_details.text += "\nAktives Profil: " + String(session.defenses.get_rules().display_name)
 			_details.text += "\nBegründung: " + object.priority_reason + "\n\nEinsatzbereitschaft:\n"
 			for candidate in session.defenses.get_track_eligibility(object):
@@ -434,6 +440,8 @@ func _event_label(type: StringName) -> String:
 		&"network_connection_changed": "NETZVERBINDUNG GEÄNDERT",
 		&"network_state_changed": "NETZZUSTAND GEÄNDERT",
 		&"power_state_changed": "ENERGIESTATUS GEÄNDERT",
+		&"jamming_level_changed": "INTERFERENZ GEÄNDERT",
+		&"anomalous_return_observed": "AUFFÄLLIGE MESSUNG",
 	}.get(type, String(type).to_upper())
 
 
@@ -486,7 +494,8 @@ func _configure_briefing(scenario_definition: ScenarioDefinition) -> void:
 		scenario_definition.placement_zones,
 		scenario_definition.blocked_zones,
 		scenario_definition.terrain_zones,
-		scenario_definition.visibility_blockers
+		scenario_definition.visibility_blockers,
+		scenario_definition.jamming_zones
 	)
 	_briefing_title.text = scenario_definition.display_name.to_upper()
 	_briefing_text.text = "AUFTRAG\n%s\n\nZIEL\nSchützen Sie die markierte kritische Infrastruktur bis T+%02d:%02d.\n\nBEDIENUNG\nMittlere Maustaste: Karte verschieben · Mausrad: Zoom · Leertaste: Pause · 1/2/4: Zeitfaktor · B: Briefing" % [

@@ -24,13 +24,14 @@ func _run() -> void:
 	_test_entity_state_roundtrip()
 	_test_mission_rule_profile()
 	_test_network_graph_validation()
+	_test_electronic_warfare_validation()
 
 	if not _failures.is_empty():
 		for failure in _failures:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("SCENARIO DATA TESTS PASSED: 9 test cases")
+	print("SCENARIO DATA TESTS PASSED: 10 test cases")
 	quit(0)
 
 
@@ -147,6 +148,19 @@ func _test_network_graph_validation() -> void:
 	scenario.network_connections[-1].source_id = &"missing_source"
 	errors = ScenarioLoader.new().validate_scenario(scenario)
 	_expect(_contains_text(errors, "missing source"), "Missing network source was not rejected")
+
+
+func _test_electronic_warfare_validation() -> void:
+	var scenario: ScenarioDefinition = load(SCENARIO_PATH).duplicate(true)
+	scenario.electronic_warfare_model_version = ScenarioDefinition.CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION + 1
+	var errors := ScenarioLoader.new().validate_scenario(scenario)
+	_expect(_contains_text(errors, "Electronic warfare model version"), "Incompatible electronic-warfare version was not rejected")
+	scenario.electronic_warfare_model_version = ScenarioDefinition.CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION
+	scenario.jamming_zones[0].strength_curve[1].time = 0.0
+	scenario.decoy_emitters[0].affected_sensor_ids = PackedStringArray(["missing_sensor"])
+	errors = ScenarioLoader.new().validate_scenario(scenario)
+	_expect(_contains_text(errors, "invalid strength curve"), "Invalid jamming time curve was not rejected")
+	_expect(_contains_text(errors, "unknown sensor"), "Unknown decoy sensor reference was not rejected")
 
 
 func _expect(condition: bool, message: String) -> void:

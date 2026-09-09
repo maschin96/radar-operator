@@ -4,6 +4,7 @@ extends Resource
 const CURRENT_CONTENT_VERSION := 1
 const CURRENT_NETWORK_MODEL_VERSION := 1
 const CURRENT_TERRAIN_MODEL_VERSION := 1
+const CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION := 1
 
 @export_group("Catalog Metadata")
 @export var content_version: int = CURRENT_CONTENT_VERSION
@@ -32,6 +33,10 @@ const CURRENT_TERRAIN_MODEL_VERSION := 1
 @export var terrain_default_height: float = 0.0
 @export var terrain_zones: Array[Dictionary] = []
 @export var visibility_blockers: Array[Dictionary] = []
+@export_group("Electronic Warfare")
+@export var electronic_warfare_model_version: int = CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION
+@export var jamming_zones: Array[Dictionary] = []
+@export var decoy_emitters: Array[Dictionary] = []
 @export var energy_connections: Array[Dictionary] = []
 @export_group("Network")
 @export var network_model_version: int = CURRENT_NETWORK_MODEL_VERSION
