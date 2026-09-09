@@ -392,7 +392,7 @@ func _source_available(source_id: StringName, kind: StringName) -> bool:
 	if state != null:
 		if state.status == InfrastructureState.Status.DESTROYED or not state.active:
 			return false
-		return state.energy_status != InfrastructureState.NetworkStatus.OFFLINE if kind == &"energy" else state.communication_status != InfrastructureState.NetworkStatus.OFFLINE
+		return state.energy_status != InfrastructureState.NetworkStatus.OFFLINE and (kind == &"energy" or state.communication_status != InfrastructureState.NetworkStatus.OFFLINE)
 	if _system_nodes.has(source_id):
 		return int((_system_nodes[source_id] as Dictionary)["%s_status" % String(kind)]) != InfrastructureState.NetworkStatus.OFFLINE
 	return false

@@ -51,7 +51,7 @@ func _test_catalog_discovers_scenarios_in_campaign_order() -> void:
 	var result: Dictionary = CatalogScript.new().discover()
 	_expect(result.success, "Scenario catalog failed validation: " + str(result.errors))
 	if result.success:
-		_expect(result.scenarios.size() == 2, "Scenario catalog did not discover both missions")
+		_expect(result.scenarios.size() >= 3, "Scenario catalog did not discover both missions")
 		_expect(result.scenarios[0].scenario_id == &"tutorial_mission_1", "Scenario catalog order is not deterministic")
 
 

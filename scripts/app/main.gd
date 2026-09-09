@@ -488,8 +488,10 @@ func _set_selected_track_release(release_status: int) -> void:
 func _on_event_added(event: Dictionary) -> void:
 	_audio.handle_event(event)
 	var seconds := int(event.simulation_time)
-	_event_list.add_item("%02d:%02d  %-14s  %s" % [seconds / 60, seconds % 60, event.category, _event_label(StringName(event.type))])
+	_event_list.add_item("%02d:%02d  %-14s  %s" % [seconds / 60, seconds % 60, event.category, String(event.data.get("message", "")) if event.type == &"mission_message" else _event_label(StringName(event.type))])
 	match StringName(event.type):
+		&"mission_message":
+			_status_label.text = String(event.data.message)
 		&"target_assigned":
 			_status_label.text = "Abwehr verfolgt den Kontakt. Zielreaktion läuft automatisch."
 		&"engagement_succeeded":

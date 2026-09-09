@@ -89,3 +89,5 @@ run_godot_test "tutorial-mission-1-test" "res://scripts/tests/tutorial_mission_1
 run_godot_test "mission-report-test" "res://scripts/tests/mission_report_test.gd"
 run_godot_test "save-manager-test" "res://scripts/tests/save_manager_test.gd"
 run_godot_test "vertical-slice-qa-test" "res://scripts/tests/vertical_slice_qa_test.gd"
+
+run_godot_test "dark-network-mission-test" "res://scripts/tests/dark_network_mission_test.gd"

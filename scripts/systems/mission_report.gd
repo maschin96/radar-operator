@@ -32,9 +32,13 @@ func get_metrics() -> Dictionary:
 		"infrastructure_hits": 0,
 		"infrastructure_survived": 0,
 		"infrastructure_destroyed": 0,
+		"network_outages": 0,
 	}
 	for event in _events:
 		match StringName(event.type):
+			&"network_state_changed":
+				if int(_find_nested_value(event, "status")) == InfrastructureState.NetworkStatus.OFFLINE:
+					metrics.network_outages += 1
 			&"threat_entered": metrics.threats_entered += 1
 			&"threat_neutralized": metrics.threats_neutralized += 1
 			&"threat_target_reached": metrics.targets_reached += 1

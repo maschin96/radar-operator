@@ -6,6 +6,8 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ### Hinzugefügt
 
+- Tutorial Mission 2 „Dunkles Netz“ mit zwei geprüften Schutzstrategien, angekündigter Leitungsstörung, Kontexthilfe und Netzausfällen in der Auswertung
+
 - strukturierte, validierte Briefingabschnitte und missionsspezifische Sieg-/Niederlagentexte in den Szenariodaten
 - eigene Debriefing-Ansicht mit Ergebniskennzahlen sowie Übergängen zu Wiederholung, Folgemission, Missionsübersicht und Hauptmenü
 - Kampagnenübersicht mit Gesamtfortschritt und bestem Ergebnis je Mission sowie automatisierter Vier-Missionen-Freischaltprüfung

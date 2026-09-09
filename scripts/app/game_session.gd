@@ -27,6 +27,7 @@ var player_commands: Array[Dictionary] = []
 
 var _event_cursors: Dictionary = {}
 var _next_replay_time: float = 0.0
+var _next_mission_event: int = 0
 
 
 func initialize(scenario_definition: ScenarioDefinition) -> void:
@@ -37,6 +38,7 @@ func initialize(scenario_definition: ScenarioDefinition) -> void:
 	player_commands.clear()
 	_event_cursors.clear()
 	_next_replay_time = 0.0
+	_next_mission_event = 0
 	placement = PlacementSystem.new()
 	placement.configure(scenario)
 	infrastructure = InfrastructureSystem.new()
@@ -362,6 +364,7 @@ func get_persistence_snapshot() -> Dictionary:
 
 func _on_simulation_tick(_tick: int) -> void:
 	var simulation_time: float = simulation.get_snapshot().simulation_time
+	_process_mission_events(simulation_time)
 	movement.process_tick(TICK_DURATION, simulation_time)
 	relocations.process_tick(TICK_DURATION, simulation_time, placement.get_placements())
 	for entity in placement.get_placements():
@@ -375,6 +378,17 @@ func _on_simulation_tick(_tick: int) -> void:
 	_collect_events(simulation_time)
 	_record_replay_frame(simulation_time)
 	state_changed.emit()
+
+
+func _process_mission_events(simulation_time: float) -> void:
+	while _next_mission_event < scenario.mission_events.size():
+		var event := scenario.mission_events[_next_mission_event]
+		if float(event.time) > simulation_time + 0.000001:
+			break
+		if event.has("connection_id"):
+			infrastructure.set_connection_enabled(StringName(event.connection_id), bool(event.enabled), simulation_time)
+		_append_event(&"mission_message", simulation_time, {"message": String(event.message)}, &"mission")
+		_next_mission_event += 1
 
 
 func _on_threat_target_reached(event: Dictionary) -> void:
