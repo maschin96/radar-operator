@@ -6,7 +6,7 @@ Der Vertical Slice umfasst eine vollständige Mission von Briefing und Vorbereit
 
 Die automatisierte Suite führt Projektimport, Parserprüfung, Unit- und Integrationstests aus. Sie deckt Simulationszeit, Datenvalidierung, Bedrohungsbewegung, Sensorik, Track-Fusion, Platzierung, Abwehr, Infrastruktur, UI-Fluss, Auswertung und Persistenz ab.
 
-Letzte Gesamtabnahme: 10. September 2026 mit Godot 4.7.2. Der Projekt-Smoke-Test und alle 129 Testfälle bestanden ohne Scriptfehler. Neben der vollständigen 180-Sekunden-Vertical-Slice-Mission wurde Tutorial Mission 1 vom Briefing über alle zehn Lernschritte bis zur Auswertung automatisiert durchgespielt. Hauptnavigation, Missionskatalog, strukturierte Briefings, Debriefing-Übergänge, Vier-Missionen-Freischaltkette, Profilfortschritt, Einstellungen, Netzgraph, Sichtbarkeitsmasken, mobile Systeme, Stör- und Täuschverläufe sowie die drei Zielauflösungen werden zusätzlich headless geprüft.
+Letzte Gesamtabnahme: 10. September 2026 mit Godot 4.7.2. Der Projekt-Smoke-Test und alle 132 Testfälle bestanden ohne Scriptfehler. Neben der vollständigen 180-Sekunden-Vertical-Slice-Mission wurde Tutorial Mission 1 vom Briefing über alle zehn Lernschritte bis zur Auswertung automatisiert durchgespielt. Hauptnavigation, Missionskatalog, strukturierte Briefings, Debriefing-Übergänge, Vier-Missionen-Freischaltkette, Profilfortschritt, Einstellungen, Netzgraph, Sichtbarkeitsmasken, mobile Systeme, Stör- und Täuschverläufe sowie die drei Zielauflösungen werden zusätzlich headless geprüft.
 
 Der geführte Referenzpfad der Tutorialmission muss mit einem unbeschädigten Kraftwerk, mindestens einer erfolgreichen Abwehr und ohne Zieleinschlag enden. Dafür nutzt die Mission bewusst eigene, fehlertolerante Übungswerte; die Balance der freien Mission bleibt unverändert.
 
@@ -48,8 +48,8 @@ Die Build-Pipeline ist damit für alle drei MVP-Zielplattformen funktionsfähig.
 - Mobile Systeme nutzen abstrahierte Rasterrouten. Elektronische Störung und Täuschkontakte nutzen bewusst abstrakte Flächen, Kurven und Indizien statt realer Signalverfahren.
 - Einsatzregelprofile, Vorschau und Entscheidungserklärungen sind spielbar. Missionen können ein Startprofil referenzieren; eine kampagnenweite Profilbibliothek ist noch nicht vorgesehen.
 - Das animierte Replay interpoliert sekündliche spielersichtbare Zustände. Zeitleiste, Geschwindigkeit, Ereignissprünge und Ursachenverlauf sind verfügbar; der letzte Zustand wird auch bei manuellem Abbruch aufgezeichnet.
-- Sprachmeldungen sind noch durch priorisierte synthetische Warntöne ersetzt.
-- Grafik und Ton sind konsistente MVP-Assets, noch keine finale Produktionsqualität.
+- Funksprüche verwenden eine verfügbare deutsche Systemstimme; ohne Stimme bleiben Textmeldungen und synthetische Warnsignale verfügbar.
+- Die Vektorsymbole und synthetischen Signale sind als beabsichtigter Stil dokumentiert. Externe subjektive Lesbarkeits- und Hörtests stehen noch aus.
 - Export-Presets und geprüfte Debug-Builds sind für macOS, Windows und Linux vorhanden. Signierung, Notarisierung und Store-Pakete sind nicht Teil des Vertical Slice.
 - Windows- und Linux-Builds wurden lokal erzeugt und strukturell geprüft, aber noch nicht auf nativer Zielhardware gestartet.
 

@@ -6,6 +6,8 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ### Hinzugefügt
 
+- gemeinsame Kontaktsymbole, Blau-/Orange-Palette, begrenzte Radar-/Ereignisanimationen, UI-Signale, optionale deutsche Systemsprachausgabe und separat regelbare Atmosphäre
+
 - animierte Replaykarte mit Zeitregler, 1×/2×/4×, Ereignisfokus, Versorgungsverlauf und Reaktionszeit; manueller Abbruch mit Auswertung ohne Profiländerung
 
 - Kampagnenfinale „Sättigung“ mit 14 Kontakten in drei Phasen, mobiler Reserve, zwei Schwierigkeitsvarianten und Ressourcenkennzahlen; scrollbare Missionsauswahl

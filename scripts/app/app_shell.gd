@@ -121,11 +121,13 @@ func show_settings() -> void:
 	fullscreen.toggled.connect(func(enabled: bool) -> void: settings_manager.update_draft({"window_mode": "fullscreen" if enabled else "windowed"}))
 	_content.add_child(fullscreen)
 	_add_setting_toggle("Hoher Kontrast", "high_contrast", bool(draft.high_contrast))
+	_add_setting_toggle("Farbenblindheit: Blau / Orange", "colorblind_mode", bool(draft.colorblind_mode))
 	_add_setting_toggle("Reduzierte Effekte", "reduced_effects", bool(draft.reduced_effects))
 	_add_setting_toggle("Warntöne", "alerts_enabled", bool(draft.alerts_enabled))
 	_add_volume_slider("Gesamtlautstärke", "master_volume", float(draft.master_volume))
-	_add_volume_slider("Warnlautstärke", "alerts_volume", float(draft.alerts_volume))
-	_add_volume_slider("Meldungslautstärke", "voice_volume", float(draft.voice_volume))
+	_add_volume_slider("Effekte und Warnungen", "alerts_volume", float(draft.alerts_volume))
+	_add_volume_slider("Sprachausgabe", "voice_volume", float(draft.voice_volume))
+	_add_volume_slider("Atmosphäre", "atmosphere_volume", float(draft.atmosphere_volume))
 	var bindings_title := Label.new()
 	bindings_title.text = "TASTENBELEGUNG"
 	bindings_title.add_theme_color_override("font_color", Color(0.36, 0.93, 0.65))
@@ -260,6 +262,7 @@ func show_replay() -> void:
 	var panel := ReplayPanel.new()
 	_content.add_child(panel)
 	panel.configure(_debriefing_data)
+	panel.map.colorblind_mode = bool(settings_manager.settings.get("colorblind_mode", false))
 	_add_button("ZUR AUSWERTUNG", func() -> void: show_debriefing(_debriefing_data))
 	panel.play_button.grab_focus()
 

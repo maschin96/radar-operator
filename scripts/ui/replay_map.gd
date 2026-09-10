@@ -2,6 +2,7 @@ class_name ReplayMap
 extends Control
 
 var frame: Dictionary = {}
+var colorblind_mode: bool = false
 var world_size := Vector2(2000, 1200)
 var focus_position: Variant = null
 
@@ -24,8 +25,8 @@ func _draw() -> void:
 			var position := (ReplayTimeline.point(item.get("estimated_position", item.get("position"))) - center) * scale_factor + size * 0.5
 			var color := Color("78d5b1")
 			if collection == "tracks":
-				color = Color("efb94c") if bool(item.get("possible_deception", false)) else Color("f16e58")
-				draw_circle(position, 4.0, color)
+				color = RadarSymbols.contact_color(StringName(item.get("classification", "unknown")), colorblind_mode)
+				RadarSymbols.contact(self, position, StringName(item.get("classification", "unknown")), color, int(item.get("release_status", 0)) == 2)
 				draw_arc(position, maxf(6.0, float(item.get("uncertainty_radius", 0.0)) * scale_factor), 0, TAU, 24, Color(color, 0.3))
 			else:
 				color = Color("6d8178") if not bool(item.get("active", true)) else color
