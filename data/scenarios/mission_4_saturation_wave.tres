@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AttackWaveDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/attack_wave_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"saturation_wave"
+start_time = 0.0
+spawns = Array[Dictionary]([{"id": &"saturation_00", "definition_id": &"threat_heavy", "delay": 30.0, "completion": &"target", "target_id": &"north_power", "route": PackedVector2Array(0, 200, 520, 390)},
+{"id": &"saturation_01", "definition_id": &"threat_heavy", "delay": 34.0, "completion": &"target", "target_id": &"north_power", "route": PackedVector2Array(0, 200, 520, 390)},
+{"id": &"saturation_02", "definition_id": &"threat_heavy", "delay": 70.0, "completion": &"target", "target_id": &"capital_command", "route": PackedVector2Array(2000, 100, 1000, 610)},
+{"id": &"saturation_03", "definition_id": &"threat_heavy", "delay": 100.0, "completion": &"target", "target_id": &"north_power", "route": PackedVector2Array(0, 200, 520, 390)},
+{"id": &"saturation_04", "definition_id": &"threat_swift", "delay": 105.0, "completion": &"target", "target_id": &"capital_command", "route": PackedVector2Array(2000, 100, 1000, 610)},
+{"id": &"saturation_05", "definition_id": &"threat_heavy", "delay": 180.0, "completion": &"target", "target_id": &"east_factory", "route": PackedVector2Array(2000, 1050, 1510, 790)},
+{"id": &"saturation_06", "definition_id": &"threat_heavy", "delay": 184.0, "completion": &"target", "target_id": &"east_factory", "route": PackedVector2Array(2000, 1050, 1510, 790)},
+{"id": &"saturation_07", "definition_id": &"threat_heavy", "delay": 220.0, "completion": &"target", "target_id": &"east_factory", "route": PackedVector2Array(2000, 1050, 1510, 790)},
+{"id": &"saturation_08", "definition_id": &"threat_heavy", "delay": 224.0, "completion": &"target", "target_id": &"east_factory", "route": PackedVector2Array(2000, 1050, 1510, 790)},
+{"id": &"saturation_09", "definition_id": &"threat_swift", "delay": 250.0, "completion": &"target", "target_id": &"east_factory", "route": PackedVector2Array(2000, 1050, 1510, 790)},
+{"id": &"saturation_10", "definition_id": &"threat_heavy", "delay": 290.0, "completion": &"target", "target_id": &"capital_command", "route": PackedVector2Array(2000, 100, 1000, 610)},
+{"id": &"saturation_11", "definition_id": &"threat_heavy", "delay": 294.0, "completion": &"target", "target_id": &"north_power", "route": PackedVector2Array(0, 200, 520, 390)},
+{"id": &"saturation_12", "definition_id": &"threat_heavy", "delay": 325.0, "completion": &"target", "target_id": &"capital_command", "route": PackedVector2Array(2000, 100, 1000, 610)},
+{"id": &"saturation_13", "definition_id": &"threat_swift", "delay": 329.0, "completion": &"target", "target_id": &"east_factory", "route": PackedVector2Array(2000, 1050, 1510, 790)}])

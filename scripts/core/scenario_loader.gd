@@ -51,6 +51,10 @@ func validate_scenario(scenario: ScenarioDefinition) -> Array[String]:
 		errors.append("Scenario budget cannot be negative")
 	if scenario.mission_duration <= 0.0:
 		errors.append("Scenario duration must be positive")
+	for variant_path in scenario.difficulty_variants:
+		var variant: Resource = ResourceLoader.load(variant_path) if ResourceLoader.exists(variant_path) else null
+		if not variant is ScenarioDefinition or variant.scenario_id != scenario.scenario_id:
+			errors.append("Difficulty variant is missing or references a different mission")
 	_validate_campaign_text(scenario, errors)
 	_validate_mission_events(scenario, errors)
 	if scenario.network_model_version != ScenarioDefinition.CURRENT_NETWORK_MODEL_VERSION:

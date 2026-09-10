@@ -6,7 +6,7 @@ Der Vertical Slice umfasst eine vollständige Mission von Briefing und Vorbereit
 
 Die automatisierte Suite führt Projektimport, Parserprüfung, Unit- und Integrationstests aus. Sie deckt Simulationszeit, Datenvalidierung, Bedrohungsbewegung, Sensorik, Track-Fusion, Platzierung, Abwehr, Infrastruktur, UI-Fluss, Auswertung und Persistenz ab.
 
-Letzte Gesamtabnahme: 10. September 2026 mit Godot 4.7.2. Der Projekt-Smoke-Test und alle 120 Testfälle bestanden ohne Scriptfehler. Neben der vollständigen 180-Sekunden-Vertical-Slice-Mission wurde Tutorial Mission 1 vom Briefing über alle zehn Lernschritte bis zur Auswertung automatisiert durchgespielt. Hauptnavigation, Missionskatalog, strukturierte Briefings, Debriefing-Übergänge, Vier-Missionen-Freischaltkette, Profilfortschritt, Einstellungen, Netzgraph, Sichtbarkeitsmasken, mobile Systeme, Stör- und Täuschverläufe sowie die drei Zielauflösungen werden zusätzlich headless geprüft.
+Letzte Gesamtabnahme: 10. September 2026 mit Godot 4.7.2. Der Projekt-Smoke-Test und alle 125 Testfälle bestanden ohne Scriptfehler. Neben der vollständigen 180-Sekunden-Vertical-Slice-Mission wurde Tutorial Mission 1 vom Briefing über alle zehn Lernschritte bis zur Auswertung automatisiert durchgespielt. Hauptnavigation, Missionskatalog, strukturierte Briefings, Debriefing-Übergänge, Vier-Missionen-Freischaltkette, Profilfortschritt, Einstellungen, Netzgraph, Sichtbarkeitsmasken, mobile Systeme, Stör- und Täuschverläufe sowie die drei Zielauflösungen werden zusätzlich headless geprüft.
 
 Der geführte Referenzpfad der Tutorialmission muss mit einem unbeschädigten Kraftwerk, mindestens einer erfolgreichen Abwehr und ohne Zieleinschlag enden. Dafür nutzt die Mission bewusst eigene, fehlertolerante Übungswerte; die Balance der freien Mission bleibt unverändert.
 
@@ -43,7 +43,7 @@ Die Build-Pipeline ist damit für alle drei MVP-Zielplattformen funktionsfähig.
 
 ## Bekannte Einschränkungen
 
-- Tutorial Mission 1 und das ursprüngliche Vertical-Slice-Szenario sind im vollständigen Kampagnenfluss erreichbar; Mission 2 – Dunkles Netz ist spielbar; Mission 3 – Falsche Echos ist spielbar; Mission 4 folgt in #15.
+- Alle vier Kampagnenmissionen und das zusätzliche freie Testszenario sind spielbar. Zwei Strategien pro neuer Mission sowie die Herausforderung des Finales sind automatisiert geprüft. Externe Playtests stehen noch aus.
 - Das Geländemodell nutzt bewusst abstrakte Höhenzonen statt einer hochauflösenden topografischen Karte.
 - Mobile Systeme nutzen abstrahierte Rasterrouten. Elektronische Störung und Täuschkontakte nutzen bewusst abstrakte Flächen, Kurven und Indizien statt realer Signalverfahren.
 - Einsatzregelprofile, Vorschau und Entscheidungserklärungen sind spielbar. Missionen können ein Startprofil referenzieren; eine kampagnenweite Profilbibliothek ist noch nicht vorgesehen.

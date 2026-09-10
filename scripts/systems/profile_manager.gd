@@ -108,9 +108,9 @@ func get_mission_result(scenario_id: StringName) -> int:
 func get_campaign_progress(catalog: Variant) -> Dictionary:
 	var completed := 0
 	for scenario in catalog.scenarios:
-		if is_completed(scenario.scenario_id):
+		if scenario.is_campaign_mission and is_completed(scenario.scenario_id):
 			completed += 1
-	return {"completed": completed, "total": catalog.scenarios.size()}
+	return {"completed": completed, "total": catalog.scenarios.filter(func(s: ScenarioDefinition) -> bool: return s.is_campaign_mission).size()}
 
 
 func get_next_unlocked_scenario(scenario_id: StringName, catalog: Variant) -> ScenarioDefinition:
@@ -118,7 +118,7 @@ func get_next_unlocked_scenario(scenario_id: StringName, catalog: Variant) -> Sc
 	if current == null:
 		return null
 	for scenario in catalog.scenarios:
-		if scenario.campaign_order > current.campaign_order and is_unlocked(scenario.scenario_id):
+		if scenario.is_campaign_mission and scenario.campaign_order > current.campaign_order and is_unlocked(scenario.scenario_id):
 			return scenario
 	return null
 
