@@ -106,6 +106,9 @@ func _ready() -> void:
 	%ResetTrackRelease.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.DEFAULT))
 	%ProtectionPriority.pressed.connect(_open_rule_editor)
 	_build_catalog()
+	for button in find_children("*", "BaseButton", true, false):
+		button.pressed.connect(_audio.play_ui_feedback)
+	_audio.radio_message.connect(func(message: String) -> void: _status_label.text = message)
 	rule_editor = EngagementRuleEditor.new()
 	add_child(rule_editor)
 	_refresh_ui()
@@ -137,7 +140,8 @@ func apply_settings(settings: Dictionary) -> void:
 	%ReducedEffects.button_pressed = bool(settings.get("reduced_effects", false))
 	%AlertsEnabled.button_pressed = bool(settings.get("alerts_enabled", true))
 	_audio.alerts_enabled = %AlertsEnabled.button_pressed
-	_audio.set_alert_volume(float(settings.get("alerts_volume", 0.8)))
+	_audio.apply_settings(settings)
+	_map.colorblind_mode = bool(settings.get("colorblind_mode", false))
 	_on_accessibility_changed(true)
 
 
@@ -491,6 +495,7 @@ func _set_selected_track_release(release_status: int) -> void:
 
 
 func _on_event_added(event: Dictionary) -> void:
+	_map.present_event(event)
 	_audio.handle_event(event)
 	var seconds := int(event.simulation_time)
 	_event_list.add_item("%02d:%02d  %-14s  %s" % [seconds / 60, seconds % 60, event.category, String(event.data.get("message", "")) if event.type == &"mission_message" else _event_label(StringName(event.type))])

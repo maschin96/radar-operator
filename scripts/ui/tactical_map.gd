@@ -49,6 +49,9 @@ var _preview_valid: bool = false
 var _relocation_preview: Dictionary = {}
 var _selected_kind: StringName
 var _selected_id: StringName
+var colorblind_mode: bool = false
+var _presentation_time: float = 0.0
+var _visual_events: Array[Dictionary] = []
 var high_contrast: bool = false
 var reduced_effects: bool = false
 var _layers: Dictionary = {
@@ -73,6 +76,13 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_presentation_time += delta
+	for index in range(_visual_events.size() - 1, -1, -1):
+		_visual_events[index].age += delta
+		if _visual_events[index].age >= 1.2:
+			_visual_events.remove_at(index)
+	if not reduced_effects or not _visual_events.is_empty():
+		queue_redraw()
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	if direction != Vector2.ZERO and has_focus():
 		pan_by_screen_delta(-direction * KEYBOARD_PAN_SPEED * delta)
@@ -232,6 +242,7 @@ func _draw() -> void:
 		_draw_tracks()
 	if is_layer_visible(LAYER_SELECTION):
 		_draw_selection()
+	_draw_presentation()
 	_draw_frame_and_debug()
 
 
@@ -342,7 +353,12 @@ func _draw_infrastructure() -> void:
 			color = Color("e2534a")
 		elif state.active and (state.energy_status == InfrastructureState.NetworkStatus.DEGRADED or state.communication_status == InfrastructureState.NetworkStatus.DEGRADED):
 			color = Color("f08c46")
-		_draw_diamond(world_to_screen(state.position), 10.0, color)
+		var position := world_to_screen(state.position)
+		_draw_diamond(position, 10.0, color)
+		var status := "ONLINE" if state.active else "AUS"
+		if state.active and (state.energy_status > 0 or state.communication_status > 0):
+			status = "NETZ !"
+		draw_string(ThemeDB.fallback_font, position + Vector2(15, 5), String(state.id) + " · " + status, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
 
 
 func _draw_systems() -> void:
@@ -395,11 +411,10 @@ func _draw_tracks() -> void:
 	for track in _track_states:
 		var position: Vector2 = world_to_screen(track.estimated_position)
 		var radius: float = maxf(track.uncertainty_radius * zoom_level, 5.0)
-		var color := Color("ff5d4a") if track.classification == &"hostile" else Color("8fffd1")
-		if not high_contrast:
-			color = Color("f16e58") if track.classification == &"hostile" else Color("78d5b1")
-		if track.possible_deception:
-			color = Color("efb94c")
+		var color := RadarSymbols.contact_color(track.classification, colorblind_mode)
+		if high_contrast:
+			color = color.lightened(0.3)
+		RadarSymbols.contact(self, position, track.classification, color, track.release_status == TrackState.ReleaseStatus.BLOCKED)
 		var marker := ["", "!", "!!"][track.priority] as String
 		if track.possible_deception:
 			marker += " ?"
@@ -508,3 +523,42 @@ func _notify_camera_changed() -> void:
 func _on_resized() -> void:
 	_clamp_camera()
 	queue_redraw()
+
+
+func present_event(event: Dictionary) -> void:
+	var type := StringName(event.get("type", ""))
+	if type not in [&"track_created", &"target_assigned", &"engagement_succeeded", &"engagement_failed", &"infrastructure_damaged", &"network_state_changed"]:
+		return
+	var position: Variant = ReplayTimeline.nested(event, "position")
+	if position != null:
+		position = ReplayTimeline.point(position)
+	else:
+		for field in ["track_id", "target_id", "consumer_id", "entity_id"]:
+			var id: Variant = ReplayTimeline.nested(event, field)
+			if id == null:
+				continue
+			for kind in [&"track", &"infrastructure", &"system"]:
+				position = _find_object_position(kind, StringName(id))
+				if position != null:
+					break
+			if position != null:
+				break
+	if position == null:
+		return
+	if _visual_events.size() >= 32:
+		_visual_events.pop_front()
+	_visual_events.append({"type": type, "position": position, "age": 0.0})
+
+func _draw_presentation() -> void:
+	if not reduced_effects and is_layer_visible(LAYER_SYSTEMS):
+		for state in _placement_states:
+			if state.active and String(state.definition_id).begins_with("sensor"):
+				var radius := fmod(_presentation_time, 3.0) / 3.0 * 95.0
+				draw_arc(world_to_screen(state.position), radius, 0, TAU, 40, Color(0.4, 0.85, 0.7, (1.0 - radius / 95.0) * 0.3), 1.0)
+	for effect in _visual_events:
+		var position := world_to_screen(effect.position)
+		var radius := 16.0 if reduced_effects else 12.0 + float(effect.age) * 28.0
+		var color := Color("75cfff") if effect.type == &"track_created" else Color("ffb454")
+		var label: String = {&"track_created": "ERFASST", &"target_assigned": "ABWEHR", &"engagement_succeeded": "ERFOLG", &"engagement_failed": "FEHLVERSUCH", &"infrastructure_damaged": "TREFFER", &"network_state_changed": "NETZ !"}[effect.type]
+		draw_arc(position, radius, 0, TAU, 32, Color(color, 0.8), 2.0)
+		draw_string(ThemeDB.fallback_font, position + Vector2(16, 22), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, color)

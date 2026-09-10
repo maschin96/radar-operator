@@ -12,6 +12,10 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 run/main_scene="res://scenes/app/app_shell.tscn"
 config/icon="res://assets/icon.svg"
 
+[audio]
+
+general/text_to_speech=true
+
 [display]
 
 window/size/viewport_width=1600
