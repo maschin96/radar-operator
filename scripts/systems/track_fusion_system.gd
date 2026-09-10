@@ -236,4 +236,5 @@ func _record_event(type: StringName, track: TrackState) -> void:
 		"signal_consistency": track.signal_consistency,
 		"possible_deception": track.possible_deception,
 		"source_entities": track.debug_source_entities.keys(),
+		"sensor_id": String(track.last_update_summary.get("sensor_id", "")),
 	})

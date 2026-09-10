@@ -11,6 +11,7 @@ const TICK_DURATION := 0.1
 
 var scenario: ScenarioDefinition
 var phase: Phase = Phase.PREPARATION
+var manually_aborted: bool = false
 var placement: PlacementSystem
 var infrastructure: InfrastructureSystem
 var movement: ThreatMovementSystem
@@ -33,6 +34,7 @@ var _next_mission_event: int = 0
 func initialize(scenario_definition: ScenarioDefinition) -> void:
 	scenario = scenario_definition
 	phase = Phase.PREPARATION
+	manually_aborted = false
 	events.clear()
 	replay_frames.clear()
 	player_commands.clear()
@@ -149,6 +151,8 @@ func set_track_release(track_id: StringName, release_status: int) -> Dictionary:
 
 func replay_player_command(command: Dictionary) -> Dictionary:
 	match StringName(command.get("type", "")):
+		&"abort_mission":
+			return abort_mission()
 		&"set_track_priority":
 			return set_track_priority(StringName(command.data.track_id), int(command.data.priority), String(command.data.get("reason", "")))
 		&"set_track_release":
@@ -222,6 +226,14 @@ func cancel_relocation(entity_id: StringName) -> Dictionary:
 	return result
 
 
+func abort_mission() -> Dictionary:
+	if phase != Phase.RUNNING:
+		return {"success": false, "reason": "mission_not_running"}
+	_record_player_command(&"abort_mission", {})
+	manually_aborted = true
+	return {"success": infrastructure.abort_mission(_simulation_time())}
+
+
 func place_system(definition_id: StringName, position: Vector2) -> Dictionary:
 	if phase != Phase.PREPARATION:
 		return {"success": false, "reasons": ["not_in_preparation"]}
@@ -274,6 +286,7 @@ func start_mission() -> Dictionary:
 	placement.start_deployment()
 	infrastructure.start_mission()
 	phase = Phase.RUNNING
+	_record_replay_frame(0.0, true)
 	_append_event(&"mission_started", 0.0, {"sensor_count": sensor_count, "defense_count": defense_count})
 	state_changed.emit()
 	return {"success": true}
@@ -366,11 +379,15 @@ func _on_simulation_tick(_tick: int) -> void:
 	var simulation_time: float = simulation.get_snapshot().simulation_time
 	_process_mission_events(simulation_time)
 	movement.process_tick(TICK_DURATION, simulation_time)
+	if phase == Phase.ENDED:
+		return
 	relocations.process_tick(TICK_DURATION, simulation_time, placement.get_placements())
 	for entity in placement.get_placements():
 		infrastructure.update_system_position(entity.id, entity.position)
 	electronic_warfare.process_tick(simulation_time)
 	infrastructure.process_tick(TICK_DURATION, simulation_time)
+	if phase == Phase.ENDED:
+		return
 	_apply_network_to_systems()
 	var measurements := sensors.process_tick(simulation_time, movement.get_debug_threat_states())
 	fusion.process_measurements(measurements, simulation_time)
@@ -410,6 +427,7 @@ func _on_mission_ended(event: Dictionary) -> void:
 	phase = Phase.ENDED
 	simulation.set_time_scale(0.0)
 	_collect_events(float(event.simulation_time))
+	_record_replay_frame(float(event.simulation_time), true)
 	mission_finished.emit(infrastructure.get_mission_status())
 	state_changed.emit()
 
@@ -479,8 +497,8 @@ func _phase_name() -> StringName:
 	return [&"preparation", &"running", &"ended"][phase]
 
 
-func _record_replay_frame(simulation_time: float) -> void:
-	if simulation_time + 0.000000001 < _next_replay_time:
+func _record_replay_frame(simulation_time: float, force: bool = false) -> void:
+	if not force and simulation_time + 0.000000001 < _next_replay_time:
 		return
 	var track_data: Array[Dictionary] = []
 	for track in fusion.get_active_tracks():
