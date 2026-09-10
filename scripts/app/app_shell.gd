@@ -213,6 +213,8 @@ func show_debriefing(data: Dictionary) -> void:
 	]
 	if int(metrics.get("network_outages", 0)) > 0:
 		report.text += "\nNetzverbindungen mit Ausfallereignis: %d. Prüfen Sie die Versorgungskette vor der nächsten Aufstellung." % int(metrics.network_outages)
+	if float(metrics.get("peak_interference", 0.0)) > 0.0:
+		report.text += "\nStärkste Interferenz: %.0f%% · Tracks mit Konsistenzhinweisen: %d" % [float(metrics.peak_interference) * 100.0, int(metrics.get("suspected_tracks", 0))]
 	_content.add_child(report)
 	_add_button("MISSION WIEDERHOLEN", launch_mission.bind(scenario_id)).grab_focus()
 	var next_scenario: ScenarioDefinition = profile_manager.get_next_unlocked_scenario(scenario_id, catalog)

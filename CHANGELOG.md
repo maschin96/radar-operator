@@ -6,6 +6,8 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ### Hinzugefügt
 
+- Mission 3 „Falsche Echos“ mit zwei Sensorstrategien, westlichem Höhenzug, zeitabhängiger Störung und Informationsqualität in der Auswertung
+
 - Tutorial Mission 2 „Dunkles Netz“ mit zwei geprüften Schutzstrategien, angekündigter Leitungsstörung, Kontexthilfe und Netzausfällen in der Auswertung
 
 - strukturierte, validierte Briefingabschnitte und missionsspezifische Sieg-/Niederlagentexte in den Szenariodaten

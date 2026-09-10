@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AttackWaveDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/attack_wave_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"false_echoes_wave"
+start_time = 0.0
+spawns = Array[Dictionary]([{"id": &"echo_00", "definition_id": &"threat_heavy", "delay": 15.0, "completion": &"target", "target_id": &"north_power", "route": PackedVector2Array(0, 200, 520, 390)},
+{"id": &"echo_01", "definition_id": &"threat_heavy", "delay": 55.0, "completion": &"target", "target_id": &"capital_command", "route": PackedVector2Array(2000, 100, 1000, 610)},
+{"id": &"echo_02", "definition_id": &"threat_heavy", "delay": 95.0, "completion": &"target", "target_id": &"east_factory", "route": PackedVector2Array(2000, 1050, 1510, 790)},
+{"id": &"echo_03", "definition_id": &"threat_heavy", "delay": 145.0, "completion": &"target", "target_id": &"north_power", "route": PackedVector2Array(0, 200, 520, 390)},
+{"id": &"echo_04", "definition_id": &"threat_heavy", "delay": 170.0, "completion": &"target", "target_id": &"capital_command", "route": PackedVector2Array(2000, 100, 1000, 610)},
+{"id": &"echo_05", "definition_id": &"threat_heavy", "delay": 210.0, "completion": &"target", "target_id": &"east_factory", "route": PackedVector2Array(2000, 1050, 1510, 790)},
+{"id": &"echo_06", "definition_id": &"threat_heavy", "delay": 245.0, "completion": &"target", "target_id": &"north_power", "route": PackedVector2Array(0, 200, 520, 390)},
+{"id": &"echo_07", "definition_id": &"threat_heavy", "delay": 255.0, "completion": &"target", "target_id": &"capital_command", "route": PackedVector2Array(2000, 100, 1000, 610)}])

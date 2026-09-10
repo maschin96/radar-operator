@@ -91,3 +91,4 @@ run_godot_test "save-manager-test" "res://scripts/tests/save_manager_test.gd"
 run_godot_test "vertical-slice-qa-test" "res://scripts/tests/vertical_slice_qa_test.gd"
 
 run_godot_test "dark-network-mission-test" "res://scripts/tests/dark_network_mission_test.gd"
+run_godot_test "false-echoes-mission-test" "res://scripts/tests/false_echoes_mission_test.gd"
