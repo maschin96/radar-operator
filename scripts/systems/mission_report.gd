@@ -33,9 +33,16 @@ func get_metrics() -> Dictionary:
 		"infrastructure_survived": 0,
 		"infrastructure_destroyed": 0,
 		"network_outages": 0,
+		"suspected_tracks": 0,
+		"peak_interference": 0.0,
 	}
+	var suspected_ids: Dictionary = {}
 	for event in _events:
+		if event.type in [&"track_created", &"track_updated"] and bool(event.data.get("possible_deception", false)):
+			suspected_ids[String(event.data.track_id)] = true
 		match StringName(event.type):
+			&"jamming_level_changed":
+				metrics.peak_interference = maxf(metrics.peak_interference, float(_find_nested_value(event, "level")))
 			&"network_state_changed":
 				if int(_find_nested_value(event, "status")) == InfrastructureState.NetworkStatus.OFFLINE:
 					metrics.network_outages += 1
@@ -46,6 +53,7 @@ func get_metrics() -> Dictionary:
 			&"engagement_succeeded": metrics.engagements_succeeded += 1
 			&"engagement_failed": metrics.engagements_failed += 1
 			&"infrastructure_damaged": metrics.infrastructure_hits += 1
+	metrics.suspected_tracks = suspected_ids.size()
 	for state in _infrastructure:
 		if state.status == InfrastructureState.Status.DESTROYED:
 			metrics.infrastructure_destroyed += 1
