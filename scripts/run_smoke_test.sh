@@ -93,3 +93,4 @@ run_godot_test "vertical-slice-qa-test" "res://scripts/tests/vertical_slice_qa_t
 run_godot_test "dark-network-mission-test" "res://scripts/tests/dark_network_mission_test.gd"
 run_godot_test "false-echoes-mission-test" "res://scripts/tests/false_echoes_mission_test.gd"
 run_godot_test "saturation-mission-test" "res://scripts/tests/saturation_mission_test.gd"
+run_godot_test "replay-timeline-test" "res://scripts/tests/replay_timeline_test.gd"

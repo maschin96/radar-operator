@@ -37,11 +37,21 @@ func get_metrics() -> Dictionary:
 		"peak_interference": 0.0,
 		"relocations_completed": 0,
 		"ammunition_spent": 0,
+		"average_reaction_seconds": 0.0,
 	}
 	var suspected_ids: Dictionary = {}
+	var first_seen: Dictionary = {}
+	var assigned: Dictionary = {}
+	var reaction_total := 0.0
 	for event in _events:
 		if event.type in [&"track_created", &"track_updated"] and bool(event.data.get("possible_deception", false)):
 			suspected_ids[String(event.data.track_id)] = true
+		var track_id := String(event.data.get("track_id", ""))
+		if event.type == &"track_created":
+			first_seen[track_id] = float(event.simulation_time)
+		elif event.type == &"target_assigned" and first_seen.has(track_id) and not assigned.has(track_id):
+			assigned[track_id] = true
+			reaction_total += maxf(0.0, float(event.simulation_time) - float(first_seen[track_id]))
 		match StringName(event.type):
 			&"relocation_completed": metrics.relocations_completed += 1
 			&"jamming_level_changed":
@@ -56,6 +66,7 @@ func get_metrics() -> Dictionary:
 			&"engagement_succeeded": metrics.engagements_succeeded += 1
 			&"engagement_failed": metrics.engagements_failed += 1
 			&"infrastructure_damaged": metrics.infrastructure_hits += 1
+	metrics.average_reaction_seconds = reaction_total / maxf(assigned.size(), 1.0)
 	metrics.ammunition_spent = metrics.engagements_succeeded + metrics.engagements_failed
 	metrics.suspected_tracks = suspected_ids.size()
 	for state in _infrastructure:
@@ -93,6 +104,27 @@ func build_causal_chain(damage_event_index: int) -> Array[Dictionary]:
 			var track_id := StringName(_find_nested_value(event, "track_id"))
 			if not track_id.is_empty():
 				related_track_ids[track_id] = true
+	var related_systems: Dictionary = {String(target_id): true}
+	for event in _events:
+		if int(event.index) > damage_event_index:
+			continue
+		for track_id in related_track_ids:
+			if _variant_contains(event, String(track_id)):
+				for key in ["sensor_id", "defense_id"]:
+					var system: Variant = _find_nested_value(event, key)
+					if system != null and not String(system).is_empty():
+						related_systems[String(system)] = true
+	var changed := true
+	while changed:
+		changed = false
+		for event in _events:
+			if int(event.index) > damage_event_index or event.type != &"network_state_changed":
+				continue
+			var consumer: Variant = _find_nested_value(event, "consumer_id")
+			var source: Variant = _find_nested_value(event, "source_id")
+			if consumer != null and source != null and related_systems.has(String(consumer)) and not related_systems.has(String(source)):
+				related_systems[String(source)] = true
+				changed = true
 	var chain: Array[Dictionary] = []
 	for event in _events:
 		if int(event.index) > damage_event_index:
@@ -103,6 +135,9 @@ func build_causal_chain(damage_event_index: int) -> Array[Dictionary]:
 				if _variant_contains(event, str(track_id)):
 					related = true
 					break
+		if event.type == &"network_state_changed":
+			var consumer: Variant = _find_nested_value(event, "consumer_id")
+			related = related or (consumer != null and related_systems.has(String(consumer)))
 		if related:
 			chain.append(event.duplicate(true))
 	return chain

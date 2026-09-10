@@ -95,7 +95,11 @@ func _ready() -> void:
 	%TerrainDebug.toggled.connect(func(visible: bool) -> void: _map.set_layer_visible(TacticalMap.LAYER_TERRAIN_DEBUG, visible))
 	%ElectronicWarfareLayer.toggled.connect(func(visible: bool) -> void: _map.set_layer_visible(TacticalMap.LAYER_ELECTRONIC_WARFARE, visible))
 	%AlertsEnabled.toggled.connect(func(enabled: bool) -> void: _audio.alerts_enabled = enabled)
-	%MainMenu.pressed.connect(func() -> void: request_main_menu.emit())
+	%MainMenu.pressed.connect(func() -> void:
+		if session != null and session.phase == GameSession.Phase.RUNNING:
+			session.abort_mission()
+		else:
+			request_main_menu.emit())
 	%TrackPriority.pressed.connect(_cycle_track_priority)
 	%AuthorizeTrack.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.AUTHORIZED))
 	%BlockTrack.pressed.connect(_set_selected_track_release.bind(TrackState.ReleaseStatus.BLOCKED))
@@ -263,6 +267,7 @@ func _refresh_ui() -> void:
 	_budget_label.text = "BUDGET %04d" % int(snapshot.budget)
 	var total_seconds := int(snapshot.simulation_time)
 	_time_label.text = "T+%02d:%02d  %.0f×" % [total_seconds / 60, total_seconds % 60, float(snapshot.time_scale)]
+	%MainMenu.text = "EINSATZ ABBRECHEN" if snapshot.phase == GameSession.Phase.RUNNING else "HAUPTMENÜ"
 	_start_button.disabled = snapshot.phase != GameSession.Phase.PREPARATION
 	for button in _catalog_buttons.values():
 		button.disabled = snapshot.phase != GameSession.Phase.PREPARATION
@@ -569,6 +574,11 @@ func _on_mission_finished(_status: int) -> void:
 	_restart_same.visible = true
 	_restart_new.visible = true
 	mission_debriefing_ready.emit({
+		"aborted": session.manually_aborted,
+		"report": mission_report,
+		"events": session.events.duplicate(true),
+		"replay_frames": session.replay_frames.duplicate(true),
+		"world_size": session.scenario.world_size,
 		"scenario_id": session.scenario.scenario_id,
 		"status": _status,
 		"metrics": metrics.duplicate(true),

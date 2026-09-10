@@ -187,6 +187,9 @@ func _continue_last_mission() -> void:
 
 
 func _leave_gameplay() -> void:
+	if gameplay != null and gameplay.session.phase == GameSession.Phase.RUNNING:
+		gameplay.session.abort_mission()
+		return
 	if gameplay != null:
 		gameplay.queue_free()
 		gameplay = null
@@ -198,7 +201,8 @@ func _leave_gameplay() -> void:
 func _on_mission_debriefing_ready(data: Dictionary) -> void:
 	var scenario_id := StringName(data.get("scenario_id", ""))
 	var status := int(data.get("status", InfrastructureSystem.MissionStatus.DEFEAT))
-	profile_manager.record_mission_result(scenario_id, status, catalog)
+	if not bool(data.get("aborted", false)):
+		profile_manager.record_mission_result(scenario_id, status, catalog)
 	var save_result: Dictionary = profile_manager.save(profile_path)
 	show_debriefing(data)
 	if not save_result.success:
@@ -219,28 +223,45 @@ func show_debriefing(data: Dictionary) -> void:
 	var status := int(data.get("status", InfrastructureSystem.MissionStatus.DEFEAT))
 	var metrics: Dictionary = data.get("metrics", {})
 	var outcome := "MISSION ERFÜLLT" if status == InfrastructureSystem.MissionStatus.VICTORY else "MISSION VERFEHLT"
+	if bool(data.get("aborted", false)):
+		outcome = "EINSATZ ABGEBROCHEN"
 	_add_heading(outcome, scenario.display_name if scenario != null else String(scenario_id))
 	var report := Label.new()
 	report.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	report.custom_minimum_size.y = 150.0
 	report.text = "%s\n\nBedrohungen: %d · neutralisiert: %d · Ziel erreicht: %d\nAbwehr erfolgreich: %d · fehlgeschlagen: %d\nInfrastruktur erhalten: %d · zerstört: %d" % [
-		String(data.get("summary", "Keine missionsspezifische Auswertung hinterlegt.")),
+		"Der Einsatz wurde manuell beendet. Der Kampagnenfortschritt bleibt unverändert." if bool(data.get("aborted", false)) else String(data.get("summary", "Keine missionsspezifische Auswertung hinterlegt.")),
 		int(metrics.get("threats_entered", 0)), int(metrics.get("threats_neutralized", 0)), int(metrics.get("targets_reached", 0)),
 		int(metrics.get("engagements_succeeded", 0)), int(metrics.get("engagements_failed", 0)),
 		int(metrics.get("infrastructure_survived", 0)), int(metrics.get("infrastructure_destroyed", 0)),
 	]
+	report.text += "\nMittlere Zeit bis zur ersten Zuweisung: %.1fs" % float(metrics.get("average_reaction_seconds", 0.0))
 	report.text += "\nMunition verbraucht: %d · Verlegungen abgeschlossen: %d" % [int(metrics.get("ammunition_spent", 0)), int(metrics.get("relocations_completed", 0))]
 	if int(metrics.get("network_outages", 0)) > 0:
 		report.text += "\nNetzverbindungen mit Ausfallereignis: %d. Prüfen Sie die Versorgungskette vor der nächsten Aufstellung." % int(metrics.network_outages)
 	if float(metrics.get("peak_interference", 0.0)) > 0.0:
 		report.text += "\nStärkste Interferenz: %.0f%% · Tracks mit Konsistenzhinweisen: %d" % [float(metrics.peak_interference) * 100.0, int(metrics.get("suspected_tracks", 0))]
 	_content.add_child(report)
+	if not (data.get("replay_frames", []) as Array).is_empty():
+		_add_button("REPLAY UND ZEITLEISTE", show_replay)
 	_add_button("MISSION WIEDERHOLEN", launch_mission.bind(scenario_id)).grab_focus()
 	var next_scenario: ScenarioDefinition = profile_manager.get_next_unlocked_scenario(scenario_id, catalog)
 	if next_scenario != null:
 		_add_button("WEITER: %s" % next_scenario.display_name.to_upper(), launch_mission.bind(next_scenario.scenario_id))
 	_add_button("ZUR MISSIONSÜBERSICHT", show_missions)
 	_add_button("ZUM HAUPTMENÜ", show_main_menu)
+
+
+func show_replay() -> void:
+	_clear_content()
+	_menu_scroll.custom_minimum_size = Vector2(1100, 720)
+	_view = &"replay"
+	_add_heading("REPLAY", "Zeit bewegen oder ein Schlüsselereignis wählen.")
+	var panel := ReplayPanel.new()
+	_content.add_child(panel)
+	panel.configure(_debriefing_data)
+	_add_button("ZUR AUSWERTUNG", func() -> void: show_debriefing(_debriefing_data))
+	panel.play_button.grab_focus()
 
 
 func get_debriefing_data() -> Dictionary:
@@ -273,6 +294,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match _view:
 		&"gameplay": _leave_gameplay()
+		&"replay": show_debriefing(_debriefing_data)
 		&"missions", &"settings", &"credits", &"debriefing": show_main_menu()
 
 
@@ -316,6 +338,7 @@ func _build_shell() -> void:
 
 
 func _clear_content() -> void:
+	_menu_scroll.custom_minimum_size = Vector2(648, 420)
 	_menu_scroll.scroll_vertical = 0
 	for child in _content.get_children():
 		if child != _status:

@@ -6,6 +6,8 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ### Hinzugefügt
 
+- animierte Replaykarte mit Zeitregler, 1×/2×/4×, Ereignisfokus, Versorgungsverlauf und Reaktionszeit; manueller Abbruch mit Auswertung ohne Profiländerung
+
 - Kampagnenfinale „Sättigung“ mit 14 Kontakten in drei Phasen, mobiler Reserve, zwei Schwierigkeitsvarianten und Ressourcenkennzahlen; scrollbare Missionsauswahl
 
 - Mission 3 „Falsche Echos“ mit zwei Sensorstrategien, westlichem Höhenzug, zeitabhängiger Störung und Informationsqualität in der Auswertung

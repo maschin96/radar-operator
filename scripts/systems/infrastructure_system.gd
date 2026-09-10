@@ -89,6 +89,13 @@ func start_mission(simulation_time: float = 0.0) -> bool:
 	return true
 
 
+func abort_mission(simulation_time: float) -> bool:
+	if _mission_status != MissionStatus.RUNNING:
+		return false
+	_finish_mission(MissionStatus.DEFEAT, simulation_time, &"manual_abort")
+	return true
+
+
 func process_threat_events(events: Array, simulation_time: float) -> void:
 	if _mission_status != MissionStatus.RUNNING:
 		return
