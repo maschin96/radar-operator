@@ -55,3 +55,6 @@ const CURRENT_ELECTRONIC_WARFARE_MODEL_VERSION := 1
 @export var tutorial_steps: Array[Dictionary] = []
 
 @export var mission_events: Array[Dictionary] = []
+
+@export var is_campaign_mission: bool = true
+@export var difficulty_variants: PackedStringArray = PackedStringArray()

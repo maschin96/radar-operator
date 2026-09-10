@@ -3,49 +3,43 @@
 [ext_resource type="Script" path="res://scripts/core/scenario_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/sensors/sensor_short_range.tres" id="2"]
 [ext_resource type="Resource" path="res://data/sensors/sensor_early_warning.tres" id="3"]
-[ext_resource type="Resource" path="res://data/defenses/defense_gun.tres" id="4"]
+[ext_resource type="Resource" path="res://data/campaign/defense_mobile_reserve.tres" id="4"]
 [ext_resource type="Resource" path="res://data/defenses/defense_short_range.tres" id="5"]
 [ext_resource type="Resource" path="res://data/defenses/defense_medium_range.tres" id="6"]
 [ext_resource type="Resource" path="res://data/threats/threat_swift.tres" id="7"]
 [ext_resource type="Resource" path="res://data/threats/threat_low_signature.tres" id="8"]
-[ext_resource type="Resource" path="res://data/threats/threat_heavy.tres" id="9"]
+[ext_resource type="Resource" path="res://data/campaign/threat_network_training.tres" id="9"]
 [ext_resource type="Resource" path="res://data/infrastructure/infrastructure_command.tres" id="10"]
 [ext_resource type="Resource" path="res://data/infrastructure/infrastructure_power.tres" id="11"]
 [ext_resource type="Resource" path="res://data/infrastructure/infrastructure_factory.tres" id="12"]
-[ext_resource type="Resource" path="res://data/scenarios/mvp_wave_01.tres" id="13"]
+[ext_resource type="Resource" path="res://data/scenarios/mission_4_saturation_wave.tres" id="13"]
 
 [ext_resource type="Resource" path="res://data/rules/standard.tres" id="rules"]
 
 [resource]
 script = ExtResource("1")
 engagement_profile = ExtResource("rules")
-scenario_id = &"mvp_test_scenario"
-display_name = "Operation Morgenwache"
-summary = "Freies Vertical-Slice-Szenario mit drei Schutzgütern und einer gemischten Angriffswelle."
-campaign_order = 99
-unlock_requires = PackedStringArray("tutorial_mission_1")
+scenario_id = &"mission_4_saturation"
+display_name = "Mission 4 – Sättigung · Herausforderung"
+summary = "Halten Sie die Versorgung gegen mehrere Anfluggruppen und verlegen Sie eine begrenzte mobile Reserve."
+campaign_order = 4
+unlock_requires = PackedStringArray("mission_3_false_echoes")
 expected_duration_minutes = 15
 learning_objectives = PackedStringArray("Sensorabdeckung planen", "Mehrere Schutzgüter priorisieren", "Missionsauswertung interpretieren")
-briefing = "Schützen Sie das Kommandozentrum, das Kraftwerk und die Fabrik vor der ersten Angriffswelle."
+briefing = "Das Finale kombiniert vertraute Systeme. Zuerst geraten Kraftwerk und Kommandozentrum unter Druck, danach der Ostsektor. Munition ist begrenzt. Eine mobile Reserve kann während der ruhigen Übergangsphase verlegt werden."
 briefing_sections = Array[Dictionary]([{
-"body": "Halten Sie die kritische Infrastruktur gegen eine gemischte Angriffswelle.",
-"id": &"mission",
-"title": "Auftrag"
+"id": &"mission", "title": "Auftrag", "body": "Halten Sie das Kommandozentrum und mindestens ein weiteres Schutzgut bis T+07:00. Drei Gruppen wechseln die belastete Angriffsachse."
 }, {
-"body": "Das Kommandozentrum muss überleben; insgesamt müssen mindestens zwei der drei Schutzgüter erhalten bleiben.",
-"id": &"assets",
-"title": "Schutzgüter"
+"id": &"phases", "title": "Phasen", "body": "T+30 bis T+105: West und Zentrum. Ab T+180: verdichtete Ostanflüge. Ab T+290: gemischte Abschlussgruppe. Lagehinweise kündigen Übergänge an; die Zeit kann angehalten werden."
 }, {
-"body": "Planen Sie Radarüberdeckung, begrenzte Abwehrressourcen und die Abhängigkeiten des Energie- und Kommunikationsnetzes gemeinsam.",
-"id": &"constraints",
-"title": "Einschränkungen und Mechaniken"
+"id": &"reserve", "title": "Mobile Reserve und Munition", "body": "Die mobile Reserve wird wie die bekannten mobilen Systeme verlegt: auswählen, Ziel wählen, Route prüfen. Während Abbau, Fahrt und Aufbau wirkt sie nicht. Verlegen kostet 35 Budget. Prüfen Sie Restmunition und Freigaben, bevor die nächste Gruppe beginnt. Standard bietet 4000 Budget, Herausforderung 3400."
 }])
-victory_debriefing = "Der Verbund hielt stand. Vergleichen Sie Schutzprioritäten, Munitionsverbrauch und Reaktionszeiten für eine noch robustere Aufstellung."
-defeat_debriefing = "Die Schutzvorgaben wurden verfehlt. Die Auswertung zeigt, an welcher Stelle Erfassung, Freigabe oder Netzversorgung abgerissen sind."
+victory_debriefing = "Die Kampagne ist abgeschlossen. Die Auswertung zeigt verbrauchte Munition, Verlegungen und Netzausfälle. Vergleichen Sie breite Anfangsabdeckung mit einer beweglichen Reserve für den Wechsel der Angriffsachse."
+defeat_debriefing = "Die Sättigung hat den Schutzauftrag durchbrochen. Prüfen Sie Restmunition, Versorgungsquellen und Verlegezeitpunkt. Eine Reserve während der Angriffsspitze abzubauen öffnet vorübergehend eine Lücke; eine frühzeitige Verlegung kann die nächste Achse abfangen."
 world_size = Vector2(2000, 1200)
-starting_budget = 2500
-seed = 20260826
-mission_duration = 180.0
+starting_budget = 3400
+seed = 20260915
+mission_duration = 420.0
 definitions = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12")])
 starting_entities = Array[Dictionary]([{
 "definition_id": &"infrastructure_command",
@@ -66,47 +60,6 @@ starting_entities = Array[Dictionary]([{
 attack_waves = Array[Resource]([ExtResource("13")])
 placement_zones = Array[Rect2]([Rect2(80, 80, 1840, 1040)])
 blocked_zones = Array[Rect2]([Rect2(940, 550, 120, 120), Rect2(470, 340, 100, 100), Rect2(1460, 740, 100, 100)])
-terrain_zones = Array[Dictionary]([{
-"area": Rect2(0, 0, 450, 350),
-"height": 120.0,
-"terrain_type": &"highlands",
-"visibility_factor": 0.75
-}])
-visibility_blockers = Array[Dictionary]([{
-"area": Rect2(300, 0, 100, 350),
-"height": 180.0,
-"visibility_factor": 0.25
-}])
-jamming_zones = Array[Dictionary]([{
-"affected_sensor_ids": PackedStringArray("sensor_short_range"),
-"area": Rect2(100, 750, 500, 350),
-"id": &"southwest_interference",
-"strength": 0.8,
-"strength_curve": Array[Dictionary]([{
-"strength": 0.0,
-"time": 0.0
-}, {
-"strength": 1.0,
-"time": 15.0
-}, {
-"strength": 1.0,
-"time": 70.0
-}, {
-"strength": 0.0,
-"time": 85.0
-}])
-}])
-decoy_emitters = Array[Dictionary]([{
-"affected_sensor_ids": PackedStringArray("sensor_short_range"),
-"end_time": 60.0,
-"id": &"southwest_anomalous_returns",
-"measurement_interval": 1.5,
-"position_error": 42.0,
-"route": PackedVector2Array(180, 1020, 560, 820),
-"signal_consistency": 0.42,
-"signature_strength": 0.85,
-"start_time": 20.0
-}])
 network_connections = Array[Dictionary]([{
 "consumer_id": &"capital_command",
 "id": &"energy_power_command",
@@ -136,4 +89,12 @@ mission_goals = {
 "minimum_survivors": 2,
 "required_survivors": PackedStringArray("capital_command")
 }
-is_campaign_mission = false
+mission_events = Array[Dictionary]([{
+"time": 1.0, "message": "LAGE: West- und Zentrumsgruppe erwartet. Munition reicht nur bei überlegter Verteilung."
+}, {
+"time": 130.0, "message": "LAGEWECHSEL: Ostanflüge ab T+180. Jetzt besteht Zeit, eine mobile Reserve mit sicherem Ziel und ausreichendem Restbudget zu verlegen."
+}, {
+"time": 175.0, "message": "LAGE: Ostanflüge in fünf Sekunden. Abbau und Fahrt sperren ein System; prüfen Sie Bereitschaft und Restmunition."
+}, {
+"time": 280.0, "message": "LAGEWECHSEL: Gemischte Abschlussgruppe. Überprüfen Sie Sperren, Prioritäten und die Versorgung des Kommandozentrums."
+}])

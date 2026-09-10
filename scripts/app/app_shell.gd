@@ -23,6 +23,7 @@ var _menu_background: ColorRect
 var _pending_binding_action: StringName
 var _pending_binding_button: Button
 var _debriefing_data: Dictionary = {}
+var _menu_scroll: ScrollContainer
 
 
 func _ready() -> void:
@@ -103,6 +104,9 @@ func show_missions() -> void:
 		], launch_mission.bind(card.scenario_id))
 		button.disabled = not card.unlocked
 		button.tooltip_text = "Lernziele: " + ", ".join(card.learning_objectives)
+		for variant_path in catalog.get_scenario(card.scenario_id).difficulty_variants:
+			var variant_button := _add_button("HERAUSFORDERUNG: " + String(card.display_name), launch_variant.bind(card.scenario_id, variant_path))
+			variant_button.disabled = not card.unlocked
 	_add_button("ZURÜCK", show_main_menu)
 
 
@@ -140,7 +144,19 @@ func show_credits() -> void:
 	_add_button("ZURÜCK", show_main_menu)
 
 
-func launch_mission(scenario_id: StringName) -> bool:
+func launch_variant(scenario_id: StringName, path: String) -> bool:
+	var base: ScenarioDefinition = catalog.get_scenario(scenario_id)
+	if base == null or not base.difficulty_variants.has(path):
+		_status.text = "Unbekannte Missionsvariante."
+		return false
+	var result := ScenarioLoader.new().load_scenario(path)
+	if not result.success or result.scenario.scenario_id != scenario_id:
+		_status.text = "Missionsvariante konnte nicht geladen werden."
+		return false
+	return launch_mission(scenario_id, result.scenario)
+
+
+func launch_mission(scenario_id: StringName, variant: ScenarioDefinition = null) -> bool:
 	if catalog == null or profile_manager == null or not profile_manager.is_unlocked(scenario_id):
 		_status.text = "Mission ist nicht freigeschaltet."
 		return false
@@ -150,6 +166,8 @@ func launch_mission(scenario_id: StringName) -> bool:
 		return false
 	if gameplay != null:
 		gameplay.queue_free()
+	if variant != null:
+		scenario = variant
 	_view = &"gameplay"
 	_menu_background.visible = false
 	_menu_panel.visible = false
@@ -211,6 +229,7 @@ func show_debriefing(data: Dictionary) -> void:
 		int(metrics.get("engagements_succeeded", 0)), int(metrics.get("engagements_failed", 0)),
 		int(metrics.get("infrastructure_survived", 0)), int(metrics.get("infrastructure_destroyed", 0)),
 	]
+	report.text += "\nMunition verbraucht: %d · Verlegungen abgeschlossen: %d" % [int(metrics.get("ammunition_spent", 0)), int(metrics.get("relocations_completed", 0))]
 	if int(metrics.get("network_outages", 0)) > 0:
 		report.text += "\nNetzverbindungen mit Ausfallereignis: %d. Prüfen Sie die Versorgungskette vor der nächsten Aufstellung." % int(metrics.network_outages)
 	if float(metrics.get("peak_interference", 0.0)) > 0.0:
@@ -279,9 +298,15 @@ func _build_shell() -> void:
 	margin.add_theme_constant_override("margin_right", 36)
 	margin.add_theme_constant_override("margin_bottom", 32)
 	panel.add_child(margin)
+	_menu_scroll = ScrollContainer.new()
+	_menu_scroll.custom_minimum_size = Vector2(648, 420)
+	_menu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_menu_scroll.follow_focus = true
+	margin.add_child(_menu_scroll)
 	_content = VBoxContainer.new()
+	_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_content.add_theme_constant_override("separation", 12)
-	margin.add_child(_content)
+	_menu_scroll.add_child(_content)
 	_status = Label.new()
 	_status.name = "Status"
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -291,6 +316,7 @@ func _build_shell() -> void:
 
 
 func _clear_content() -> void:
+	_menu_scroll.scroll_vertical = 0
 	for child in _content.get_children():
 		if child != _status:
 			child.queue_free()

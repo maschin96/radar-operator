@@ -24,7 +24,7 @@ func _run() -> void:
 	_expect(manager.is_completed(&"tutorial_mission_1"), "Victory was not recorded")
 	_expect(manager.is_unlocked(&"tutorial_mission_2"), "Victory did not unlock dependent mission")
 	var progress: Dictionary = manager.get_campaign_progress(catalog)
-	_expect(progress.completed == 1 and progress.total == catalog.scenarios.size(), "Campaign progress did not reflect completion")
+	_expect(progress.completed == 1 and progress.total == catalog.scenarios.filter(func(s: ScenarioDefinition) -> bool: return s.is_campaign_mission).size(), "Campaign progress did not reflect completion")
 	var next_scenario: ScenarioDefinition = manager.get_next_unlocked_scenario(&"tutorial_mission_1", catalog)
 	_expect(next_scenario != null and next_scenario.scenario_id == &"tutorial_mission_2", "Next unlocked campaign mission was not resolved")
 	_expect(manager.get_mission_result(&"tutorial_mission_1") == InfrastructureSystem.MissionStatus.VICTORY, "Best mission result was not exposed")
