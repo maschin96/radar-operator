@@ -39,26 +39,38 @@ func load_or_defaults(path: String) -> Dictionary:
 		settings = get_defaults()
 		apply(settings)
 		return {"success": true, "recovered": false, "settings": settings.duplicate(true)}
+	var result := _read_settings_file(path)
+	if not result.success:
+		return _recover_defaults("; ".join(result.errors) + " " + _recovery_hint(path))
+	settings = (result.settings as Dictionary).duplicate(true)
+	apply(settings)
+	return {"success": true, "recovered": false, "settings": settings.duplicate(true)}
+
+
+func _read_settings_file(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		return _recover_defaults("Einstellungsdatei konnte nicht geöffnet werden.")
+		return {"success": false, "errors": ["Einstellungsdatei konnte nicht geöffnet werden."]}
 	var json := JSON.new()
 	var parse_error := json.parse(file.get_as_text())
 	file.close()
 	if parse_error != OK or not json.data is Dictionary:
-		return _recover_defaults("Einstellungsdatei ist beschädigt: %s" % json.get_error_message())
+		return {"success": false, "errors": ["Einstellungsdatei ist beschädigt: %s" % json.get_error_message()]}
 	var errors := validate(json.data)
 	if not errors.is_empty():
-		return _recover_defaults("; ".join(errors))
-	settings = (json.data as Dictionary).duplicate(true)
-	apply(settings)
-	return {"success": true, "recovered": false, "settings": settings.duplicate(true)}
+		return {"success": false, "errors": errors}
+	return {"success": true, "settings": json.data}
 
 
 func save(path: String) -> Dictionary:
 	var errors := validate(settings)
 	if not errors.is_empty():
 		return {"success": false, "errors": errors}
+	# Check the destination on every write, including files changed since startup.
+	if FileAccess.file_exists(path):
+		var existing := _read_settings_file(path)
+		if not existing.success:
+			return {"success": false, "errors": existing.errors + [_recovery_hint(path)]}
 	var temporary_path := path + ".tmp"
 	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if file == null:
@@ -104,9 +116,14 @@ func commit_draft(path: String) -> Dictionary:
 	var errors := validate(draft)
 	if not errors.is_empty():
 		return {"success": false, "errors": errors}
+	var previous := settings
 	settings = draft.duplicate(true)
+	var result := save(path)
+	if not result.success:
+		settings = previous
+		return result
 	apply(settings)
-	return save(path)
+	return result
 
 
 func cancel_draft() -> Dictionary:
@@ -126,14 +143,20 @@ func validate(data: Dictionary) -> Array[String]:
 			errors.append("Einstellungsdatei enthält das Feld '%s' nicht." % key)
 	if not errors.is_empty():
 		return errors
-	if int(data.format_version) != FORMAT_VERSION:
-		errors.append("Nicht unterstützte Einstellungsversion: %s" % data.format_version)
-	if not ["windowed", "fullscreen"].has(String(data.window_mode)):
-		errors.append("Ungültiger Fenstermodus '%s'." % data.window_mode)
+	if not _is_integer(data.format_version) or data.format_version != FORMAT_VERSION:
+		errors.append("Nicht unterstützte Einstellungsversion: %s" % str(data.format_version))
+	if not data.window_mode is String or not ["windowed", "fullscreen"].has(data.window_mode):
+		errors.append("Ungültiger Fenstermodus '%s'." % str(data.window_mode))
 	for volume_key in ["master_volume", "alerts_volume", "voice_volume"]:
+		if not _is_number(data[volume_key]):
+			errors.append("Lautstärke '%s' muss eine Zahl sein." % volume_key)
+			continue
 		var value := float(data[volume_key])
-		if value < 0.0 or value > 1.0:
+		if not is_finite(value) or value < 0.0 or value > 1.0:
 			errors.append("Lautstärke '%s' liegt außerhalb von 0 bis 1." % volume_key)
+	for flag in ["alerts_enabled", "high_contrast", "reduced_effects"]:
+		if not data[flag] is bool:
+			errors.append("Einstellung '%s' muss wahr oder falsch sein." % flag)
 	if not data.action_bindings is Dictionary:
 		errors.append("Tastenbelegungen sind ungültig.")
 	else:
@@ -165,6 +188,9 @@ func _binding_errors(bindings: Dictionary) -> Array[String]:
 		if not bindings.has(action):
 			errors.append("Pflichtaktion '%s' besitzt keine Tastenbelegung." % action)
 			continue
+		if not _is_integer(bindings[action]):
+			errors.append("Tastenbelegung '%s' muss eine ganze Zahl sein." % action)
+			continue
 		var keycode := int(bindings[action])
 		if keycode <= 0:
 			errors.append("Pflichtaktion '%s' besitzt keine erreichbare Taste." % action)
@@ -173,6 +199,18 @@ func _binding_errors(bindings: Dictionary) -> Array[String]:
 		else:
 			assigned[keycode] = action
 	return errors
+
+
+func _is_number(value: Variant) -> bool:
+	return value is int or value is float
+
+
+func _is_integer(value: Variant) -> bool:
+	return _is_number(value) and is_finite(float(value)) and absf(float(value)) <= 2147483647.0 and float(value) == floorf(float(value))
+
+
+func _recovery_hint(path: String) -> String:
+	return "Die Originaldatei bleibt erhalten. Zum Wiederherstellen eine passende Spielversion verwenden oder die Datei '%s' umbenennen und erneut speichern." % ProjectSettings.globalize_path(path)
 
 
 func _recover_defaults(reason: String) -> Dictionary:
