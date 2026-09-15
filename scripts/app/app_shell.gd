@@ -45,9 +45,9 @@ func _ready() -> void:
 		_status.text = "Beschädigtes Profil wurde als .corrupt gesichert; ein neues Profil ist aktiv."
 	settings_manager = SettingsScript.new()
 	var settings_result: Dictionary = settings_manager.load_or_defaults(settings_path)
-	if settings_result.recovered:
-		_status.text = "Ungültige Einstellungen wurden durch sichere Standardwerte ersetzt."
 	show_main_menu()
+	if settings_result.recovered:
+		_status.text = "Standardwerte sind vorläufig aktiv. " + settings_result.warning
 
 
 func get_current_view() -> StringName:

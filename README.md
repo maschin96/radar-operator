@@ -9,7 +9,7 @@
 [![Godot](https://img.shields.io/badge/Godot-4.7.2-478CBF?logo=godot-engine&logoColor=white)](https://godotengine.org/)
 [![Godot CI](https://github.com/maschin96/radar-operator/actions/workflows/ci.yml/badge.svg)](https://github.com/maschin96/radar-operator/actions/workflows/ci.yml)
 ![GDScript](https://img.shields.io/badge/GDScript-statisch_typisiert-355570)
-![Tests](https://img.shields.io/badge/Tests-129_erfolgreich-2ea44f)
+![Tests](https://img.shields.io/badge/Tests-135_erfolgreich-2ea44f)
 ![Status](https://img.shields.io/badge/Status-spielbarer_Prototyp-f0a202)
 [![License: GPL v3+](https://img.shields.io/badge/License-GPL_v3%2B-blue.svg)](LICENSE)
 
@@ -121,7 +121,7 @@ Balancing und Szenarien liegen als textbasierte Godot Resources unter `data/`. D
 
 ## Tests
 
-Die vollständige Suite importiert das Projekt headless und führt 129 deterministische Unit-, Integrations- und End-to-End-Testfälle aus:
+Die vollständige Suite importiert das Projekt headless und führt 135 deterministische Unit-, Integrations- und End-to-End-Testfälle aus:
 
 ```sh
 ./scripts/run_smoke_test.sh
@@ -165,6 +165,7 @@ scripts/tests/       Headless Unit-, Integrations- und End-to-End-Tests
 
 - [Spiel- und Technikkonzept](docs/radar-operator-konzept.md)
 - [QA, Plattformstatus und bekannte Einschränkungen](docs/qa-und-bekannte-einschraenkungen.md)
+- [Einstellungsdateien und Wiederherstellung](docs/einstellungen-und-wiederherstellung.md)
 - [UI-Designsystem](docs/ui-designsystem.md)
 - [Einsatzregeln und Entscheidungserklärungen](docs/einsatzregeln.md)
 - [Energie- und Kommunikationsnetz](docs/energie-und-kommunikationsnetz.md)

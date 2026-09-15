@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ## [Unveröffentlicht]
 
+### Behoben
+
+- Teil von #18: Einstellungsdateien mit ungültigen Datentypen werden sicher abgewiesen; beschädigte und nicht unterstützte Dateien bleiben beim Übernehmen und Zurücksetzen unverändert erhalten.
+- Fehlgeschlagenes Speichern lässt aktive Einstellungen, Lautstärke und Tastenbelegung unverändert; der Entwurf bleibt für einen erneuten Versuch erhalten.
+- Das Hauptmenü zeigt Wiederherstellungshinweise nach einem Ladefehler sichtbar an.
+
 ### Hinzugefügt
 
 - animierte Replaykarte mit Zeitregler, 1×/2×/4×, Ereignisfokus, Versorgungsverlauf und Reaktionszeit; manueller Abbruch mit Auswertung ohne Profiländerung

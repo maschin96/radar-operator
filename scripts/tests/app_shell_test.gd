@@ -84,6 +84,28 @@ func _run() -> void:
 	_expect(restored_cards[1].best_result == InfrastructureSystem.MissionStatus.DEFEAT, "App restart lost defeat result")
 	app.queue_free()
 	await process_frame
+	var future: Dictionary = SettingsManager.new().get_defaults()
+	future.format_version = SettingsManager.FORMAT_VERSION + 1
+	var future_text := JSON.stringify(future)
+	var settings_file := FileAccess.open(settings_path, FileAccess.WRITE)
+	settings_file.store_string(future_text)
+	settings_file.close()
+	app = scene.instantiate()
+	app.profile_path = profile_path
+	app.settings_path = settings_path
+	root.add_child(app)
+	await process_frame
+	_expect(app.get_current_view() == &"main_menu", "Future settings blocked app startup")
+	_expect(app._status.text.contains("Originaldatei") and app._status.text.contains("umbenennen"), "Main menu hid settings recovery guidance")
+	app.show_settings()
+	app.settings_manager.update_draft({"high_contrast": true})
+	app._commit_settings()
+	_expect(app.get_current_view() == &"settings" and app._status.text.contains("Originaldatei"), "Failed settings commit hid recovery guidance")
+	_expect(not app.settings_manager.settings.high_contrast, "Failed UI commit applied settings")
+	app._reset_settings()
+	_expect(FileAccess.get_file_as_string(settings_path) == future_text, "UI reset overwrote future settings")
+	app.queue_free()
+	await process_frame
 	for path in [profile_path, settings_path]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(path)
@@ -92,7 +114,7 @@ func _run() -> void:
 			push_error("TEST FAILED: %s" % failure)
 		quit(1)
 		return
-	print("APP SHELL TESTS PASSED: 4 test cases")
+	print("APP SHELL TESTS PASSED: 5 test cases")
 	quit(0)
 
 
