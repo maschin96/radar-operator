@@ -50,8 +50,8 @@ Die Build-Pipeline ist damit für alle drei MVP-Zielplattformen funktionsfähig.
 - Mobile Systeme nutzen abstrahierte Rasterrouten. Elektronische Störung und Täuschkontakte nutzen bewusst abstrakte Flächen, Kurven und Indizien statt realer Signalverfahren.
 - Einsatzregelprofile, Vorschau und Entscheidungserklärungen sind spielbar. Missionen können ein Startprofil referenzieren; eine kampagnenweite Profilbibliothek ist noch nicht vorgesehen.
 - Das animierte Replay interpoliert sekündliche spielersichtbare Zustände. Zeitleiste, Geschwindigkeit, Ereignissprünge und Ursachenverlauf sind verfügbar; der letzte Zustand wird auch bei manuellem Abbruch aufgezeichnet.
-- Sprachmeldungen sind noch durch priorisierte synthetische Warntöne ersetzt.
-- Grafik und Ton sind konsistente MVP-Assets, noch keine finale Produktionsqualität.
+- Funksprüche verwenden eine verfügbare deutsche Systemstimme; ohne Stimme bleiben Textmeldungen und synthetische Warnsignale verfügbar.
+- Die Vektorsymbole und synthetischen Signale sind als beabsichtigter Stil dokumentiert. Externe subjektive Lesbarkeits- und Hörtests stehen noch aus.
 - Export-Presets und geprüfte Debug-Builds sind für macOS, Windows und Linux vorhanden. Signierung, Notarisierung und Store-Pakete sind nicht Teil des Vertical Slice.
 - Windows- und Linux-Builds wurden lokal erzeugt und strukturell geprüft, aber noch nicht auf nativer Zielhardware gestartet.
 

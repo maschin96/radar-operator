@@ -21,6 +21,8 @@ func get_defaults() -> Dictionary:
 		"master_volume": 0.8,
 		"alerts_volume": 0.8,
 		"voice_volume": 0.8,
+		"atmosphere_volume": 0.35,
+		"colorblind_mode": false,
 		"alerts_enabled": true,
 		"high_contrast": false,
 		"reduced_effects": false,
@@ -59,7 +61,9 @@ func _read_settings_file(path: String) -> Dictionary:
 	var errors := validate(json.data)
 	if not errors.is_empty():
 		return {"success": false, "errors": errors}
-	return {"success": true, "settings": json.data}
+	var merged := get_defaults()
+	merged.merge(json.data, true)
+	return {"success": true, "settings": merged}
 
 
 func save(path: String) -> Dictionary:
@@ -147,14 +151,18 @@ func validate(data: Dictionary) -> Array[String]:
 		errors.append("Nicht unterstützte Einstellungsversion: %s" % str(data.format_version))
 	if not data.window_mode is String or not ["windowed", "fullscreen"].has(data.window_mode):
 		errors.append("Ungültiger Fenstermodus '%s'." % str(data.window_mode))
-	for volume_key in ["master_volume", "alerts_volume", "voice_volume"]:
+	for volume_key in ["master_volume", "alerts_volume", "voice_volume", "atmosphere_volume"]:
+		if not data.has(volume_key):
+			continue
 		if not _is_number(data[volume_key]):
 			errors.append("Lautstärke '%s' muss eine Zahl sein." % volume_key)
 			continue
 		var value := float(data[volume_key])
 		if not is_finite(value) or value < 0.0 or value > 1.0:
 			errors.append("Lautstärke '%s' liegt außerhalb von 0 bis 1." % volume_key)
-	for flag in ["alerts_enabled", "high_contrast", "reduced_effects"]:
+	for flag in ["alerts_enabled", "high_contrast", "reduced_effects", "colorblind_mode"]:
+		if not data.has(flag):
+			continue
 		if not data[flag] is bool:
 			errors.append("Einstellung '%s' muss wahr oder falsch sein." % flag)
 	if not data.action_bindings is Dictionary:
@@ -165,6 +173,8 @@ func validate(data: Dictionary) -> Array[String]:
 
 
 func apply(data: Dictionary) -> void:
+	set_bus_volume("Effects", float(data.alerts_volume))
+	set_bus_volume("Atmosphere", float(data.get("atmosphere_volume", 0.35)))
 	var master_bus := AudioServer.get_bus_index("Master")
 	if master_bus >= 0:
 		var linear_volume := clampf(float(data.master_volume), 0.0, 1.0)
@@ -236,3 +246,17 @@ func _replace_file(temporary_path: String, final_path: String) -> Error:
 	if had_existing:
 		DirAccess.remove_absolute(backup_path)
 	return OK
+
+
+static func ensure_audio_bus(bus_name: String) -> void:
+	if AudioServer.get_bus_index(bus_name) < 0:
+		AudioServer.add_bus()
+		var index := AudioServer.bus_count - 1
+		AudioServer.set_bus_name(index, bus_name)
+		AudioServer.set_bus_send(index, "Master")
+
+static func set_bus_volume(bus_name: String, value: float) -> void:
+	ensure_audio_bus(bus_name)
+	var index := AudioServer.get_bus_index(bus_name)
+	AudioServer.set_bus_mute(index, value <= 0.0)
+	AudioServer.set_bus_volume_db(index, linear_to_db(maxf(value, 0.0001)))
