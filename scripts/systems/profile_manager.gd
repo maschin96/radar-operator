@@ -1,12 +1,14 @@
 class_name ProfileManager
 extends RefCounted
 
-const FORMAT_VERSION := 1
+const FORMAT_VERSION := 2
 
 var profile: Dictionary = {}
+var _catalog: Variant
 
 
 func create_default(catalog: Variant) -> Dictionary:
+	_catalog = catalog
 	var unlocked: Array[String] = []
 	for scenario in catalog.scenarios:
 		if scenario.unlock_requires.is_empty():
@@ -22,6 +24,7 @@ func create_default(catalog: Variant) -> Dictionary:
 
 
 func load_or_create(path: String, catalog: Variant) -> Dictionary:
+	_catalog = catalog
 	if not FileAccess.file_exists(path):
 		create_default(catalog)
 		return {"success": true, "created": true, "profile": profile.duplicate(true)}
@@ -33,16 +36,24 @@ func load_or_create(path: String, catalog: Variant) -> Dictionary:
 	file.close()
 	if parse_error != OK or not json.data is Dictionary:
 		return {"success": false, "errors": ["Profildatei ist beschädigt: %s" % json.get_error_message()]}
-	var errors := _validate(json.data, catalog)
+	var migrated := migrate(json.data, catalog)
+	if not migrated.success:
+		return migrated
+	var errors := _validate(migrated.profile, catalog)
 	if not errors.is_empty():
 		return {"success": false, "errors": errors}
-	profile = (json.data as Dictionary).duplicate(true)
+	profile = (migrated.profile as Dictionary).duplicate(true)
 	return {"success": true, "created": false, "profile": profile.duplicate(true)}
 
 
 func save(path: String) -> Dictionary:
 	if profile.is_empty():
 		return {"success": false, "errors": ["Kein Profil zum Speichern vorhanden."]}
+	if FileAccess.file_exists(path):
+		var probe := ProfileManager.new()
+		var existing := probe.load_or_create(path, _catalog)
+		if not existing.success:
+			return {"success": false, "errors": existing.errors + [recovery_hint(path)]}
 	var temporary_path := path + ".tmp"
 	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if file == null:
@@ -129,21 +140,26 @@ func reset(catalog: Variant, confirmed: bool) -> Dictionary:
 	return {"success": true, "profile": create_default(catalog)}
 
 
-func _validate(data: Dictionary, catalog: Variant) -> Array[String]:
+func _validate(data: Dictionary, _unused_catalog: Variant) -> Array[String]:
 	var errors: Array[String] = []
 	for key in ["format_version", "unlocked_missions", "completed_missions", "best_results", "last_played_mission"]:
 		if not data.has(key):
 			errors.append("Profildatei enthält das Feld '%s' nicht." % key)
 	if not errors.is_empty():
 		return errors
-	if int(data.format_version) != FORMAT_VERSION:
-		errors.append("Nicht unterstützte Profilversion: %s" % data.format_version)
+	if not SettingsManager.new()._is_integer(data.format_version) or data.format_version != FORMAT_VERSION:
+		errors.append("Nicht unterstützte Profilversion: %s" % str(data.format_version))
 	if not data.unlocked_missions is Array or not data.completed_missions is Array or not data.best_results is Dictionary:
 		errors.append("Profildatei enthält ungültige Sammlungen.")
 		return errors
 	for mission_id in data.unlocked_missions + data.completed_missions:
-		if catalog.get_scenario(StringName(mission_id)) == null:
-			errors.append("Profildatei verweist auf unbekannte Mission '%s'." % mission_id)
+		if not mission_id is String or mission_id.is_empty():
+			errors.append("Profildatei enthält eine ungültige Missionskennung.")
+	if not data.last_played_mission is String:
+		errors.append("Zuletzt gespielte Mission ist ungültig.")
+	for id in data.best_results:
+		if not id is String or not SettingsManager.new()._is_integer(data.best_results[id]) or not [InfrastructureSystem.MissionStatus.VICTORY, InfrastructureSystem.MissionStatus.DEFEAT].has(int(data.best_results[id])):
+			errors.append("Profildatei enthält ein ungültiges Missionsergebnis.")
 	return errors
 
 
@@ -164,3 +180,32 @@ func _replace_file(temporary_path: String, final_path: String) -> Error:
 	if had_existing:
 		DirAccess.remove_absolute(backup_path)
 	return OK
+
+
+func migrate(data: Dictionary, catalog: Variant) -> Dictionary:
+	var version: Variant = data.get("format_version")
+	if not SettingsManager.new()._is_integer(version) or not [1, FORMAT_VERSION].has(int(version)):
+		return {"success": false, "errors": ["Nicht unterstützte Profilversion: %s" % str(version)]}
+	var result := data.duplicate(true)
+	result["format_version"] = FORMAT_VERSION
+	var errors := _validate(result, catalog)
+	if not errors.is_empty():
+		return {"success": false, "errors": errors}
+	# Retain unknown mission IDs so removed content never erases progress.
+	for scenario in catalog.scenarios:
+		var met := true
+		for requirement in scenario.unlock_requires:
+			if not result.completed_missions.has(String(requirement)):
+				met = false
+		if met and not result.unlocked_missions.has(String(scenario.scenario_id)):
+			result.unlocked_missions.append(String(scenario.scenario_id))
+	for id in result.completed_missions:
+		if not result.unlocked_missions.has(id):
+			result.unlocked_missions.append(id)
+		result.best_results[id] = InfrastructureSystem.MissionStatus.VICTORY
+	result.unlocked_missions.sort()
+	return {"success": true, "profile": result}
+
+
+func recovery_hint(path: String) -> String:
+	return "Die Originaldatei bleibt erhalten. Passende Spielversion verwenden oder '%s' sichern und umbenennen, dann neu starten." % ProjectSettings.globalize_path(path)

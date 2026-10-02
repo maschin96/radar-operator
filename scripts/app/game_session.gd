@@ -9,6 +9,7 @@ enum Phase { PREPARATION, RUNNING, ENDED }
 
 const TICK_DURATION := 0.1
 
+var scenario_source_path: String
 var scenario: ScenarioDefinition
 var phase: Phase = Phase.PREPARATION
 var manually_aborted: bool = false
@@ -33,6 +34,7 @@ var _next_mission_event: int = 0
 
 func initialize(scenario_definition: ScenarioDefinition) -> void:
 	scenario = scenario_definition
+	scenario_source_path = scenario_definition.resource_path
 	phase = Phase.PREPARATION
 	manually_aborted = false
 	events.clear()

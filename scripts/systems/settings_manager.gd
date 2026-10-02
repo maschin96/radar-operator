@@ -1,7 +1,7 @@
 class_name SettingsManager
 extends RefCounted
 
-const FORMAT_VERSION := 1
+const FORMAT_VERSION := 2
 const ACTIONS := [
 	"simulation_pause",
 	"simulation_speed_1",
@@ -58,11 +58,14 @@ func _read_settings_file(path: String) -> Dictionary:
 	file.close()
 	if parse_error != OK or not json.data is Dictionary:
 		return {"success": false, "errors": ["Einstellungsdatei ist beschädigt: %s" % json.get_error_message()]}
-	var errors := validate(json.data)
+	var migrated := migrate(json.data)
+	if not migrated.success:
+		return migrated
+	var errors := validate(migrated.settings)
 	if not errors.is_empty():
 		return {"success": false, "errors": errors}
 	var merged := get_defaults()
-	merged.merge(json.data, true)
+	merged.merge(migrated.settings, true)
 	return {"success": true, "settings": merged}
 
 
@@ -260,3 +263,17 @@ static func set_bus_volume(bus_name: String, value: float) -> void:
 	var index := AudioServer.get_bus_index(bus_name)
 	AudioServer.set_bus_mute(index, value <= 0.0)
 	AudioServer.set_bus_volume_db(index, linear_to_db(maxf(value, 0.0001)))
+
+
+func migrate(data: Dictionary) -> Dictionary:
+	var version: Variant = data.get("format_version")
+	if not _is_integer(version) or not [1, FORMAT_VERSION].has(int(version)):
+		return {"success": false, "errors": ["Nicht unterstützte Einstellungsversion: %s" % str(version)]}
+	var result := data.duplicate(true)
+	result["format_version"] = FORMAT_VERSION
+	var errors := validate(result)
+	if not errors.is_empty():
+		return {"success": false, "errors": errors}
+	var merged := get_defaults()
+	merged.merge(result, true)
+	return {"success": true, "settings": merged}

@@ -1,0 +1,542 @@
+{
+	"defense_rules": {
+		"allow_redundant_engagement": false,
+		"automatic_release": true,
+		"display_name": "Standardwache",
+		"infrastructure_priorities": {},
+		"minimum_classification": "suspicious",
+		"profile_id": "standard"
+	},
+	"expected_snapshot": {
+		"budget": 880.0,
+		"defense_rules": {
+			"allow_redundant_engagement": false,
+			"automatic_release": true,
+			"display_name": "Standardwache",
+			"infrastructure_priorities": {},
+			"minimum_classification": "suspicious",
+			"profile_id": "standard"
+		},
+		"defenses": [
+			{
+				"ammunition": 5.0,
+				"assigned_track_id": "",
+				"id": "placed_0002",
+				"network_quality": 1.0,
+				"operational": true,
+				"powered": true,
+				"reload_remaining": 0.0,
+				"status": 1.0,
+				"tracking_remaining": 0.0
+			}
+		],
+		"electronic_warfare": {
+			"emitted_slots": {},
+			"total_decoy_returns": 0.0,
+			"zone_levels": {
+				"southwest_interference": 0.4
+			}
+		},
+		"event_count": 86.0,
+		"infrastructure": [
+			{
+				"active": true,
+				"communication_online": true,
+				"communication_status": 0.0,
+				"damage": 0.0,
+				"definition_id": "infrastructure_factory",
+				"energy_status": 0.0,
+				"faction": "player",
+				"id": "east_factory",
+				"infrastructure_type": "factory",
+				"initial_position": {
+					"x": 1510.0,
+					"y": 790.0
+				},
+				"integrity": 100.0,
+				"is_critical": false,
+				"maximum_integrity": 100.0,
+				"mobility_status": 0.0,
+				"network_causes": {
+					"communication": "",
+					"energy": ""
+				},
+				"network_reserves": {
+					"communication": 4.0,
+					"energy": 5.0
+				},
+				"network_sources": {
+					"communication": "capital_command",
+					"energy": "north_power"
+				},
+				"position": {
+					"x": 1510.0,
+					"y": 790.0
+				},
+				"powered": true,
+				"protection_value": 1.8,
+				"relocation_command_id": 0.0,
+				"relocation_origin": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"relocation_path": [],
+				"relocation_path_index": 0.0,
+				"relocation_remaining": 0.0,
+				"relocation_target": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"status": 0.0
+			},
+			{
+				"active": true,
+				"communication_online": true,
+				"communication_status": 0.0,
+				"damage": 0.0,
+				"definition_id": "infrastructure_power",
+				"energy_status": 0.0,
+				"faction": "player",
+				"id": "north_power",
+				"infrastructure_type": "power",
+				"initial_position": {
+					"x": 520.0,
+					"y": 390.0
+				},
+				"integrity": 110.0,
+				"is_critical": true,
+				"maximum_integrity": 110.0,
+				"mobility_status": 0.0,
+				"network_causes": {
+					"communication": "",
+					"energy": ""
+				},
+				"network_reserves": {
+					"communication": 6.0,
+					"energy": 0.0
+				},
+				"network_sources": {
+					"communication": "capital_command",
+					"energy": ""
+				},
+				"position": {
+					"x": 520.0,
+					"y": 390.0
+				},
+				"powered": true,
+				"protection_value": 2.4,
+				"relocation_command_id": 0.0,
+				"relocation_origin": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"relocation_path": [],
+				"relocation_path_index": 0.0,
+				"relocation_remaining": 0.0,
+				"relocation_target": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"status": 0.0
+			},
+			{
+				"active": true,
+				"communication_online": true,
+				"communication_status": 0.0,
+				"damage": 0.0,
+				"definition_id": "infrastructure_command",
+				"energy_status": 0.0,
+				"faction": "player",
+				"id": "capital_command",
+				"infrastructure_type": "command",
+				"initial_position": {
+					"x": 1000.0,
+					"y": 610.0
+				},
+				"integrity": 140.0,
+				"is_critical": true,
+				"maximum_integrity": 140.0,
+				"mobility_status": 0.0,
+				"network_causes": {
+					"communication": "",
+					"energy": ""
+				},
+				"network_reserves": {
+					"communication": 0.0,
+					"energy": 10.0
+				},
+				"network_sources": {
+					"communication": "",
+					"energy": "north_power"
+				},
+				"position": {
+					"x": 1000.0,
+					"y": 610.0
+				},
+				"powered": true,
+				"protection_value": 3.0,
+				"relocation_command_id": 0.0,
+				"relocation_origin": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"relocation_path": [],
+				"relocation_path_index": 0.0,
+				"relocation_remaining": 0.0,
+				"relocation_target": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"status": 0.0
+			}
+		],
+		"mission_status": 1.0,
+		"network_connections": [
+			{
+				"automatic": false,
+				"cause": "",
+				"consumer_id": "capital_command",
+				"enabled": true,
+				"id": "energy_power_command",
+				"kind": "energy",
+				"recovery_duration": 2.0,
+				"recovery_remaining": 0.0,
+				"reserve_duration": 10.0,
+				"reserve_remaining": 10.0,
+				"source_id": "north_power",
+				"status": 0.0,
+				"supplied": true
+			},
+			{
+				"automatic": false,
+				"cause": "",
+				"consumer_id": "east_factory",
+				"enabled": true,
+				"id": "energy_power_factory",
+				"kind": "energy",
+				"recovery_duration": 2.0,
+				"recovery_remaining": 0.0,
+				"reserve_duration": 5.0,
+				"reserve_remaining": 5.0,
+				"source_id": "north_power",
+				"status": 0.0,
+				"supplied": true
+			},
+			{
+				"automatic": false,
+				"cause": "",
+				"consumer_id": "north_power",
+				"enabled": true,
+				"id": "communication_command_power",
+				"kind": "communication",
+				"recovery_duration": 2.0,
+				"recovery_remaining": 0.0,
+				"reserve_duration": 6.0,
+				"reserve_remaining": 6.0,
+				"source_id": "capital_command",
+				"status": 0.0,
+				"supplied": true
+			},
+			{
+				"automatic": false,
+				"cause": "",
+				"consumer_id": "east_factory",
+				"enabled": true,
+				"id": "communication_command_factory",
+				"kind": "communication",
+				"recovery_duration": 2.0,
+				"recovery_remaining": 0.0,
+				"reserve_duration": 4.0,
+				"reserve_remaining": 4.0,
+				"source_id": "capital_command",
+				"status": 0.0,
+				"supplied": true
+			},
+			{
+				"automatic": true,
+				"cause": "",
+				"consumer_id": "placed_0001",
+				"enabled": true,
+				"id": "auto_energy_placed_0001",
+				"kind": "energy",
+				"recovery_duration": 2.0,
+				"recovery_remaining": 0.0,
+				"reserve_duration": 8.0,
+				"reserve_remaining": 8.0,
+				"source_id": "north_power",
+				"status": 0.0,
+				"supplied": true
+			},
+			{
+				"automatic": true,
+				"cause": "",
+				"consumer_id": "placed_0001",
+				"enabled": true,
+				"id": "auto_communication_placed_0001",
+				"kind": "communication",
+				"recovery_duration": 2.0,
+				"recovery_remaining": 0.0,
+				"reserve_duration": 5.0,
+				"reserve_remaining": 5.0,
+				"source_id": "capital_command",
+				"status": 0.0,
+				"supplied": true
+			},
+			{
+				"automatic": true,
+				"cause": "",
+				"consumer_id": "placed_0002",
+				"enabled": true,
+				"id": "auto_energy_placed_0002",
+				"kind": "energy",
+				"recovery_duration": 2.0,
+				"recovery_remaining": 0.0,
+				"reserve_duration": 8.0,
+				"reserve_remaining": 8.0,
+				"source_id": "north_power",
+				"status": 0.0,
+				"supplied": true
+			},
+			{
+				"automatic": true,
+				"cause": "",
+				"consumer_id": "placed_0002",
+				"enabled": true,
+				"id": "auto_communication_placed_0002",
+				"kind": "communication",
+				"recovery_duration": 2.0,
+				"recovery_remaining": 0.0,
+				"reserve_duration": 5.0,
+				"reserve_remaining": 5.0,
+				"source_id": "capital_command",
+				"status": 0.0,
+				"supplied": true
+			}
+		],
+		"phase": 1.0,
+		"placements": [
+			{
+				"active": true,
+				"damage": 0.0,
+				"definition_id": "defense_medium_range",
+				"faction": "player",
+				"id": "placed_0002",
+				"initial_position": {
+					"x": 1320.0,
+					"y": 520.0
+				},
+				"mobility_status": 0.0,
+				"position": {
+					"x": 1320.0,
+					"y": 520.0
+				},
+				"relocation_command_id": 0.0,
+				"relocation_origin": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"relocation_path": [],
+				"relocation_path_index": 0.0,
+				"relocation_remaining": 0.0,
+				"relocation_target": {
+					"x": 0.0,
+					"y": 0.0
+				}
+			},
+			{
+				"active": true,
+				"damage": 0.0,
+				"definition_id": "sensor_early_warning",
+				"faction": "player",
+				"id": "placed_0001",
+				"initial_position": {
+					"x": 1500.0,
+					"y": 380.0
+				},
+				"mobility_status": 0.0,
+				"position": {
+					"x": 1500.0,
+					"y": 380.0
+				},
+				"relocation_command_id": 0.0,
+				"relocation_origin": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"relocation_path": [],
+				"relocation_path_index": 0.0,
+				"relocation_remaining": 0.0,
+				"relocation_target": {
+					"x": 0.0,
+					"y": 0.0
+				}
+			}
+		],
+		"player_commands": [],
+		"sensors": [
+			{
+				"id": "placed_0001",
+				"network_quality": 1.0,
+				"next_scan_time": 9.0,
+				"operational": true,
+				"powered": true,
+				"scan_count": 6.0
+			}
+		],
+		"simulation_time": 7.5,
+		"threats": [
+			{
+				"definition_id": "threat_swift",
+				"durability": 0.8,
+				"id": "swift_01",
+				"next_waypoint_index": 2.0,
+				"position": {
+					"x": 1630.69409179688,
+					"y": 297.257080078125
+				}
+			}
+		],
+		"tick": 75.0,
+		"time_scale": 1.0,
+		"tracks": [
+			{
+				"classification": "air_contact",
+				"classification_confidence": 0.24665318051373,
+				"estimated_position": {
+					"x": 1622.40832519531,
+					"y": 297.908630371094
+				},
+				"estimated_velocity": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"evidence_notes": [
+					"Bisher nur durch einen Sensor abgestützt"
+				],
+				"id": "T0002",
+				"interference_level": 0.0,
+				"last_measurement_time": 7.5,
+				"last_update_summary": {
+					"measurement_id": 2.0,
+					"residual": 0.0,
+					"result": "created",
+					"sensor_id": "placed_0001",
+					"uncertainty_after": 17.26745262146,
+					"uncertainty_before": 17.26745262146
+				},
+				"measurement_count": 1.0,
+				"possible_deception": false,
+				"priority": 0.0,
+				"priority_reason": "",
+				"release_status": 0.0,
+				"reporting_sensors": [
+					"placed_0001"
+				],
+				"signal_consistency": 1.0,
+				"uncertainty_radius": 17.26745262146
+			},
+			{
+				"classification": "air_contact",
+				"classification_confidence": 0.216900298295975,
+				"estimated_position": {
+					"x": 1863.36193847656,
+					"y": 248.205596923828
+				},
+				"estimated_velocity": {
+					"x": 0.0,
+					"y": 0.0
+				},
+				"evidence_notes": [
+					"Bisher nur durch einen Sensor abgestützt"
+				],
+				"id": "T0001",
+				"interference_level": 0.0,
+				"last_measurement_time": 6.0,
+				"last_update_summary": {
+					"measurement_id": 1.0,
+					"residual": 0.0,
+					"result": "created",
+					"sensor_id": "placed_0001",
+					"uncertainty_after": 27.3074941635132,
+					"uncertainty_before": 27.3074941635132
+				},
+				"measurement_count": 1.0,
+				"possible_deception": false,
+				"priority": 0.0,
+				"priority_reason": "",
+				"release_status": 0.0,
+				"reporting_sensors": [
+					"placed_0001"
+				],
+				"signal_consistency": 1.0,
+				"uncertainty_radius": 54.3074941635132
+			}
+		]
+	},
+	"format_version": 5,
+	"phase": 1.0,
+	"placements": [
+		{
+			"active": true,
+			"damage": 0.0,
+			"definition_id": "defense_medium_range",
+			"faction": "player",
+			"id": "placed_0002",
+			"initial_position": {
+				"x": 1320.0,
+				"y": 520.0
+			},
+			"mobility_status": 0.0,
+			"position": {
+				"x": 1320.0,
+				"y": 520.0
+			},
+			"relocation_command_id": 0.0,
+			"relocation_origin": {
+				"x": 0.0,
+				"y": 0.0
+			},
+			"relocation_path": [],
+			"relocation_path_index": 0.0,
+			"relocation_remaining": 0.0,
+			"relocation_target": {
+				"x": 0.0,
+				"y": 0.0
+			}
+		},
+		{
+			"active": true,
+			"damage": 0.0,
+			"definition_id": "sensor_early_warning",
+			"faction": "player",
+			"id": "placed_0001",
+			"initial_position": {
+				"x": 1500.0,
+				"y": 380.0
+			},
+			"mobility_status": 0.0,
+			"position": {
+				"x": 1500.0,
+				"y": 380.0
+			},
+			"relocation_command_id": 0.0,
+			"relocation_origin": {
+				"x": 0.0,
+				"y": 0.0
+			},
+			"relocation_path": [],
+			"relocation_path_index": 0.0,
+			"relocation_remaining": 0.0,
+			"relocation_target": {
+				"x": 0.0,
+				"y": 0.0
+			}
+		}
+	],
+	"player_commands": [],
+	"scenario_id": "mvp_test_scenario",
+	"scenario_path": "res://data/scenarios/mvp_test_scenario.tres",
+	"seed": 20260826.0,
+	"tick": 75.0,
+	"time_scale": 1.0
+}
