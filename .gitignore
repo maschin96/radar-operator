@@ -27,3 +27,7 @@ Desktop.ini
 *.log
 logs/
 test-results/
+
+# Python tooling caches
+__pycache__/
+*.pyc
