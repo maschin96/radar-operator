@@ -72,6 +72,12 @@ func _ready() -> void:
 	_configure_briefing(scenario)
 	_setup_tutorial(scenario)
 	_map.map_clicked.connect(_on_map_clicked)
+	_map.targeting_cancelled.connect(func() -> void:
+		_selected_definition_id = &""
+		_relocation_targeting = false
+		_map.clear_placement_preview()
+		_map.clear_relocation_preview()
+	)
 	_map.map_hovered.connect(_on_map_hovered)
 	_map.object_selected.connect(_on_object_selected)
 	_start_button.pressed.connect(start_mission)
@@ -154,7 +160,9 @@ func select_build_definition(definition_id: StringName) -> bool:
 	_selected_object_id = &""
 	for id in _catalog_buttons:
 		(_catalog_buttons[id] as Button).button_pressed = id == definition_id
-	_status_label.text = "Platz für %s wählen." % _definition(definition_id).display_name
+	_map.grab_focus()
+	_map.map_hovered.emit(_map.keyboard_position)
+	_status_label.text = "Platz für %s wählen. Pfeile bewegen das Fadenkreuz, Eingabe platziert, Esc bricht ab." % _definition(definition_id).display_name
 	_notify_tutorial(&"definition_selected", {"definition_id": definition_id})
 	return true
 
@@ -432,7 +440,9 @@ func _begin_relocation_targeting() -> void:
 	_relocation_targeting = true
 	_selected_definition_id = &""
 	_map.clear_placement_preview()
-	_status_label.text = "Zielposition für die Verlegung auf der Karte wählen."
+	_map.grab_focus()
+	_map.map_hovered.emit(_map.keyboard_position)
+	_status_label.text = "Zielposition wählen: Pfeile bewegen, Eingabe verlegt, Esc bricht ab."
 
 
 func _cancel_selected_relocation() -> void:

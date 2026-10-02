@@ -1,6 +1,8 @@
 class_name TacticalMap
 extends Control
 
+signal targeting_cancelled
+
 signal camera_changed(world_position: Vector2, zoom_level: float)
 signal map_clicked(world_position: Vector2)
 signal map_hovered(world_position: Vector2)
@@ -31,6 +33,8 @@ const LAYER_SELECTION := &"selection"
 var camera_world_position := Vector2(1000.0, 600.0)
 var zoom_level: float = 0.7
 var _is_panning := false
+var keyboard_position := Vector2(1000, 600)
+var _keyboard_active := false
 var _infrastructure_states: Array = []
 var _placement_states: Array = []
 var _track_states: Array = []
@@ -71,6 +75,14 @@ func _ready() -> void:
 	clip_contents = true
 	focus_mode = Control.FOCUS_ALL
 	resized.connect(_on_resized)
+	focus_entered.connect(func() -> void:
+		keyboard_position = camera_world_position
+		_keyboard_active = true
+		map_hovered.emit(keyboard_position)
+		queue_redraw()
+	)
+	focus_exited.connect(func() -> void: _keyboard_active = false; queue_redraw())
+	tooltip_text = "Pfeile: Fadenkreuz · Eingabe: platzieren / auswählen · Bild auf/ab: Objekte · +/−: Zoom · Esc: Auswahl abbrechen"
 	_clamp_camera()
 	queue_redraw()
 
@@ -85,11 +97,32 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	if direction != Vector2.ZERO and has_focus():
-		pan_by_screen_delta(-direction * KEYBOARD_PAN_SPEED * delta)
+		keyboard_position = (keyboard_position + direction * KEYBOARD_PAN_SPEED * delta / zoom_level).clamp(Vector2.ZERO, world_size - Vector2.ONE)
+		set_camera(keyboard_position)
+		map_hovered.emit(keyboard_position)
+		queue_redraw()
 
 
 func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_ENTER, KEY_KP_ENTER:
+				if _preview_visible or not _relocation_preview.is_empty():
+					map_clicked.emit(keyboard_position)
+				else:
+					_select_or_click(world_to_screen(keyboard_position))
+			KEY_PAGEUP, KEY_PAGEDOWN:
+				cycle_object(-1 if event.keycode == KEY_PAGEUP else 1)
+			KEY_PLUS, KEY_EQUAL, KEY_KP_ADD:
+				zoom_at(world_to_screen(keyboard_position), ZOOM_STEP)
+			KEY_MINUS, KEY_KP_SUBTRACT:
+				zoom_at(world_to_screen(keyboard_position), 1.0 / ZOOM_STEP)
+			KEY_ESCAPE:
+				targeting_cancelled.emit()
+			_:
+				return
+		accept_event()
+	elif event is InputEventMouseButton:
 		var mouse_button := event as InputEventMouseButton
 		if mouse_button.button_index == MOUSE_BUTTON_MIDDLE:
 			_is_panning = mouse_button.pressed
@@ -244,6 +277,11 @@ func _draw() -> void:
 		_draw_selection()
 	_draw_presentation()
 	_draw_frame_and_debug()
+	if _keyboard_active:
+		var cursor := world_to_screen(keyboard_position)
+		draw_circle(cursor, 10, Color.WHITE, false, 2)
+		draw_line(cursor - Vector2(16, 0), cursor + Vector2(16, 0), Color.WHITE, 2)
+		draw_line(cursor - Vector2(0, 16), cursor + Vector2(0, 16), Color.WHITE, 2)
 
 
 func _draw_terrain() -> void:
@@ -562,3 +600,23 @@ func _draw_presentation() -> void:
 		var label: String = {&"track_created": "ERFASST", &"target_assigned": "ABWEHR", &"engagement_succeeded": "ERFOLG", &"engagement_failed": "FEHLVERSUCH", &"infrastructure_damaged": "TREFFER", &"network_state_changed": "NETZ !"}[effect.type]
 		draw_arc(position, radius, 0, TAU, 32, Color(color, 0.8), 2.0)
 		draw_string(ThemeDB.fallback_font, position + Vector2(16, 22), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, color)
+
+
+func cycle_object(direction: int) -> void:
+	var objects: Array[Dictionary] = []
+	for collection in [[&"infrastructure", _infrastructure_states], [&"system", _placement_states], [&"track", _track_states]]:
+		for state in collection[1]:
+			objects.append({"kind": collection[0], "id": state.id, "position": state.estimated_position if collection[0] == &"track" else state.position})
+	if objects.is_empty():
+		return
+	objects.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return String(a.kind) + String(a.id) < String(b.kind) + String(b.id))
+	var index := -1 if direction > 0 else 0
+	for candidate in objects.size():
+		if objects[candidate].id == _selected_id and objects[candidate].kind == _selected_kind:
+			index = candidate
+	var selected: Dictionary = objects[posmod(index + direction, objects.size())]
+	keyboard_position = selected.position
+	set_camera(keyboard_position)
+	set_selected_object(selected.kind, selected.id)
+	map_hovered.emit(keyboard_position)
+	object_selected.emit(selected.kind, selected.id)
