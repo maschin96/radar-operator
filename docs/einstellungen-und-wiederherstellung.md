@@ -2,7 +2,7 @@
 
 ## Unterstütztes Format
 
-Die Einstellungen verwenden weiterhin `format_version: 1`. Gültige bestehende Dateien werden unverändert im bisherigen Schema geladen und gespeichert. Zusätzliche unbekannte Felder bleiben bei einem regulären Speichervorgang erhalten. Dieser Entwicklungsschritt zu #18 führt keine Profil-, Szenario- oder Spielstandmigration ein; diese bleiben offen.
+Einstellungen verwenden jetzt `format_version: 2`; Version 1 wird unter Erhalt aller bisherigen Werte migriert. Details zu Profil, Szenario und Spielständen stehen unter [Datenkompatibilität](datenkompatibilitaet.md).
 
 Vor dem Anwenden werden Fenstermodus, echte Wahrheitswerte, endliche Lautstärken zwischen 0 und 1 sowie ganzzahlige, konfliktfreie Tastenbelegungen geprüft. Fehlende Felder, falsche Datentypen und nicht unterstützte Versionsnummern lösen einen kontrollierten Rückfall auf Standardwerte aus.
 

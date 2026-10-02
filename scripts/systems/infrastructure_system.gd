@@ -121,7 +121,7 @@ func get_infrastructure() -> Array[InfrastructureState]:
 	var result: Array[InfrastructureState] = []
 	for state in _infrastructure.values():
 		result.append(state)
-	result.sort_custom(func(a: InfrastructureState, b: InfrastructureState) -> bool: return a.id < b.id)
+	result.sort_custom(func(a: InfrastructureState, b: InfrastructureState) -> bool: return String(a.id) < String(b.id))
 	return result
 
 

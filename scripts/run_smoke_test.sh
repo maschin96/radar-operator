@@ -95,3 +95,5 @@ run_godot_test "false-echoes-mission-test" "res://scripts/tests/false_echoes_mis
 run_godot_test "saturation-mission-test" "res://scripts/tests/saturation_mission_test.gd"
 run_godot_test "replay-timeline-test" "res://scripts/tests/replay_timeline_test.gd"
 run_godot_test "presentation-test" "res://scripts/tests/presentation_test.gd"
+
+run_godot_test "migration-test" "res://scripts/tests/migration_test.gd"

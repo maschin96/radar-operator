@@ -140,7 +140,7 @@ func get_placements() -> Array[EntityState]:
 	var result: Array[EntityState] = []
 	for entity in _placements.values():
 		result.append(entity)
-	result.sort_custom(func(a: EntityState, b: EntityState) -> bool: return a.id < b.id)
+	result.sort_custom(func(a: EntityState, b: EntityState) -> bool: return String(a.id) < String(b.id))
 	return result
 
 

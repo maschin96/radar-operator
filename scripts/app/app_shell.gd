@@ -37,17 +37,14 @@ func _ready() -> void:
 	profile_manager = ProfileScript.new()
 	var profile_result: Dictionary = profile_manager.load_or_create(profile_path, catalog)
 	if not profile_result.success:
-		var recovery_path := profile_path + ".corrupt"
-		if FileAccess.file_exists(profile_path):
-			DirAccess.rename_absolute(profile_path, recovery_path)
 		profile_manager.create_default(catalog)
-		profile_manager.save(profile_path)
-		_status.text = "Beschädigtes Profil wurde als .corrupt gesichert; ein neues Profil ist aktiv."
 	settings_manager = SettingsScript.new()
 	var settings_result: Dictionary = settings_manager.load_or_defaults(settings_path)
 	show_main_menu()
+	if not profile_result.success:
+		_status.text = "Profil nur vorläufig aktiv. " + "; ".join(profile_result.errors) + " " + profile_manager.recovery_hint(profile_path)
 	if settings_result.recovered:
-		_status.text = "Standardwerte sind vorläufig aktiv. " + settings_result.warning
+		_status.text += "\nStandardwerte sind vorläufig aktiv. " + settings_result.warning
 
 
 func get_current_view() -> StringName:
