@@ -1,7 +1,7 @@
 extends SceneTree
 
 const SCENARIO_PATH := "res://data/scenarios/mvp_test_scenario.tres"
-const SAVE_PREFIX := "/tmp/radar_operator_relocation_system_test"
+const SAVE_PREFIX := "user://radar_operator_relocation_system_test"
 
 var _failures: Array[String] = []
 

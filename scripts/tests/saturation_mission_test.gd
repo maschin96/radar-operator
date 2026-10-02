@@ -35,7 +35,7 @@ func run_tests() -> void:
 			expect(report.get_metrics().relocations_completed == 1, "Saturation debriefing omitted reserve relocation")
 		if index == 2:
 			var saves := SaveManager.new()
-			var save_path := "/tmp/radar_saturation_challenge.json"
+			var save_path := "user://radar_saturation_challenge.json"
 			expect(saves.save_session(session, save_path).success, "Challenge save failed")
 			var restored := saves.load_session(save_path)
 			expect(restored.success, "Challenge restore failed: " + str(restored.get("errors", [])))
@@ -43,8 +43,8 @@ func run_tests() -> void:
 				expect(restored.session.scenario.starting_budget == 3400, "Load silently changed difficulty budget")
 			DirAccess.remove_absolute(save_path)
 	var app = load("res://scenes/app/app_shell.tscn").instantiate()
-	app.profile_path = "/tmp/radar_saturation_profile.json"
-	app.settings_path = "/tmp/radar_saturation_settings.json"
+	app.profile_path = "user://radar_saturation_profile.json"
+	app.settings_path = "user://radar_saturation_settings.json"
 	root.add_child(app)
 	await process_frame
 	expect(not app.launch_variant(&"mission_4_saturation", CHALLENGE), "Locked challenge was launched")
@@ -54,7 +54,7 @@ func run_tests() -> void:
 	expect(app.profile_manager.get_campaign_progress(app.catalog).total == 4, "Free scenario was counted as a fifth campaign mission")
 	app.queue_free()
 	await process_frame
-	DirAccess.remove_absolute("/tmp/radar_saturation_profile.json")
+	DirAccess.remove_absolute("user://radar_saturation_profile.json")
 	for failure in failures:
 		push_error(failure)
 	print("SATURATION MISSION TESTS PASSED: 5 test cases" if failures.is_empty() else "SATURATION MISSION TESTS FAILED")
