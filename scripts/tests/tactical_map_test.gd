@@ -20,6 +20,7 @@ func _run() -> void:
 	_test_camera_clamping(tactical_map)
 	_test_independent_layers(tactical_map)
 	_test_supported_viewport_sizes(tactical_map)
+	_test_keyboard_targeting(tactical_map)
 
 	if not _failures.is_empty():
 		for failure in _failures:
@@ -27,7 +28,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	print("TACTICAL MAP TESTS PASSED: 5 test cases")
+	print("TACTICAL MAP TESTS PASSED: 6 test cases")
 	quit(0)
 
 
@@ -80,3 +81,34 @@ func _test_supported_viewport_sizes(tactical_map: Variant) -> void:
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
+
+
+func _test_keyboard_targeting(tactical_map: Variant) -> void:
+	var clicked: Array[Vector2] = []
+	var cancelled: Array[bool] = []
+	tactical_map.map_clicked.connect(func(position: Vector2) -> void: clicked.append(position))
+	tactical_map.targeting_cancelled.connect(func() -> void: cancelled.append(true))
+	tactical_map.set_world_state([
+		{"id": &"a", "position": Vector2(700, 400)},
+		{"id": &"b", "position": Vector2(1200, 600)},
+	], [], [])
+	tactical_map.set_selected_object(&"", &"")
+	tactical_map.cycle_object(1)
+	_expect(tactical_map.keyboard_position == Vector2(700, 400), "Keyboard did not select first object")
+	tactical_map.cycle_object(-1)
+	_expect(tactical_map.keyboard_position == Vector2(1200, 600), "Reverse selection did not wrap")
+	tactical_map.set_placement_preview(Vector2(1200, 600), 100, true)
+	var event := InputEventKey.new()
+	event.pressed = true
+	event.keycode = KEY_ENTER
+	tactical_map._gui_input(event)
+	_expect(clicked == [Vector2(1200, 600)], "Enter did not confirm keyboard placement")
+	tactical_map.clear_placement_preview()
+	tactical_map.set_relocation_preview({"valid": true}, Vector2(1200, 600))
+	tactical_map._gui_input(event)
+	_expect(clicked.size() == 2, "Enter did not confirm keyboard relocation")
+	event.keycode = KEY_ESCAPE
+	tactical_map._gui_input(event)
+	_expect(cancelled.size() == 1, "Escape did not cancel targeting")
+	tactical_map.clear_relocation_preview()
+	tactical_map.set_world_state([], [], [])

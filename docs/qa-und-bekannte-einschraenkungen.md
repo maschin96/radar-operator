@@ -1,5 +1,8 @@
 # Vertical-Slice-QA und bekannte Einschränkungen
 
+Aktueller Freigabeplan: [Plattformmatrix und Messverfahren](plattform-abnahme.md).
+Migrationen: [Kompatibilitätsgrenzen und Wiederherstellung](datenkompatibilitaet.md).
+
 ## Abnahmeumfang
 
 Der Vertical Slice umfasst eine vollständige Mission von Briefing und Vorbereitung über eine datengetriebene Angriffswelle bis zur Auswertung. Unterstützte Entwicklungsauflösungen sind 1920×1080 und 2560×1440. Das UI skaliert über Godots `canvas_items`-Stretch-Modus.
