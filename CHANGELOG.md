@@ -12,6 +12,10 @@ Alle wesentlichen Änderungen an Radar Operator werden in diesem Dokument festge
 
 ### Hinzugefügt
 
+- #18: idempotente Migrationen für Profil v1, Einstellungen v1 und Missionsspielstände v5; feste Fixtures, Schutz inkompatibler Originaldateien und dokumentierte Wiederherstellung
+- #19: Tastaturfadenkreuz, Objektwechsel und Bestätigung/Abbruch für Platzierung und Verlegung; Plattform-Testmatrix und native Export-Smokes in CI
+- Vorbereitung für #20/#21: anonymer Playtestplan, versionierte Plattformarchive mit Quellcode und SHA-256-Prüfsummen sowie GitHub-Release-Entwürfe
+
 - gemeinsame Kontaktsymbole, Blau-/Orange-Palette, begrenzte Radar-/Ereignisanimationen, UI-Signale, optionale deutsche Systemsprachausgabe und separat regelbare Atmosphäre
 
 - animierte Replaykarte mit Zeitregler, 1×/2×/4×, Ereignisfokus, Versorgungsverlauf und Reaktionszeit; manueller Abbruch mit Auswertung ohne Profiländerung

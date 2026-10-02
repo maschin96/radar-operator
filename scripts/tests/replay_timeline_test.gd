@@ -44,7 +44,7 @@ func run_tests() -> void:
 	session.advance(1.0)
 	expect(session.get_persistence_snapshot() == snapshot, "Aborted mission kept simulating")
 	var save := SaveManager.new()
-	var path := "/tmp/radar_replay_abort.json"
+	var path := "user://radar_replay_abort.json"
 	expect(save.save_session(session, path).success, "Abort save failed")
 	var loaded := save.load_session(path)
 	expect(loaded.success, "Abort restore failed: " + str(loaded.get("errors", [])))

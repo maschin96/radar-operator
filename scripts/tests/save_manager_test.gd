@@ -4,8 +4,8 @@ const LoaderScript := preload("res://scripts/core/scenario_loader.gd")
 const SessionScript := preload("res://scripts/app/game_session.gd")
 const SaveScript := preload("res://scripts/systems/save_manager.gd")
 const SCENARIO_PATH := "res://data/scenarios/mvp_test_scenario.tres"
-const SAVE_PATH := "/tmp/radar_operator_save_roundtrip.json"
-const CORRUPT_PATH := "/tmp/radar_operator_save_corrupt.json"
+const SAVE_PATH := "user://radar_operator_save_roundtrip.json"
+const CORRUPT_PATH := "user://radar_operator_save_corrupt.json"
 
 var _failures: Array[String] = []
 

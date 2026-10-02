@@ -164,7 +164,7 @@ func _test_active_warfare_save_and_replay() -> void:
 	var player_state := session.get_snapshot().electronic_warfare as Dictionary
 	_expect(player_state.keys() == ["zone_levels"], "Player snapshot exposes internal emitter bookkeeping")
 	var saves := SaveManager.new()
-	var path := "/tmp/radar_operator_warfare_roundtrip.json"
+	var path := "user://radar_operator_warfare_roundtrip.json"
 	_expect(saves.save_session(session, path).success, "Active warfare save failed")
 	var loaded := saves.load_session(path)
 	_expect(loaded.success, "Active warfare load failed: " + str(loaded.get("errors", [])))

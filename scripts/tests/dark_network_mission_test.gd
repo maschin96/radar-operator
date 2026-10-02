@@ -29,7 +29,7 @@ func run_tests() -> void:
 		original.advance(0.1)
 	expect(not original.sensors.get_sensors()[0].operational, "Command power loss did not interrupt dependent communications")
 	var saves := SaveManager.new()
-	var save_path := "/tmp/radar_dark_network_save.json"
+	var save_path := "user://radar_dark_network_save.json"
 	expect(saves.save_session(original, save_path).success, "Outage save failed")
 	var loaded := saves.load_session(save_path)
 	expect(loaded.success, "Outage load failed: " + str(loaded.get("errors", [])))
